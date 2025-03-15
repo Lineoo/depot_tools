@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["depot_core"]
+members = ["depot_core", "util", "widget"]
 
 [workspace.package]
 version = "0.1.0"
@@ -8,10 +8,14 @@ edition = "2024"
 
 [workspace.dependencies]
 log = "0.4.26"
+bytemuck = "1.21.0"
 env_logger = "0.11.7"
-serde = "1.0"
 hashbrown = "0.15"
+lazy_static = "1.5.0"
 parking_lot = "0.12.3"
+pollster = "0.4.0"
+serde = "1.0"
+winit = "0.30.7"
 
 ## Main package
 

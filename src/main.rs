@@ -3,6 +3,6 @@ use log::info;
 fn main() {
     env_logger::init();
 
-    println!("depoot main");
+    println!("depot main");
     info!("hi there");
 }
