@@ -1,0 +1,26 @@
+[workspace]
+resolver = "3"
+members = ["depot_core"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+
+[workspace.dependencies]
+log = "0.4.26"
+env_logger = "0.11.7"
+serde = "1.0"
+hashbrown = "0.15"
+parking_lot = "0.12.3"
+
+## Main package
+
+[package]
+name = "depot_tools"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+log.workspace = true
+env_logger.workspace = true
+depot_core = { path = "depot_core" }

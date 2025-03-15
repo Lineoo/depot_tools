@@ -1,0 +1,9 @@
+[package]
+name = "depot_core"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+hashbrown.workspace = true
+log.workspace = true
+toml = "0.8.20"
