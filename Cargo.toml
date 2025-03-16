@@ -28,3 +28,4 @@ edition.workspace = true
 log.workspace = true
 env_logger.workspace = true
 depot_core = { path = "depot_core" }
+widget = { path = "widget" }

@@ -1,17 +1,36 @@
 use winit::{application::ApplicationHandler, event::WindowEvent};
 
-use crate::window::{self, Window};
+use crate::{
+    application::Application,
+    loop_args::LoopArgs,
+    window::{self, Window},
+};
 
-pub struct AppImpl {}
+pub struct AppImpl {
+    app: *const Application,
+}
 
 impl AppImpl {
-    pub fn new() -> Self {
-        AppImpl {}
+    pub fn new(application: &Application) -> Self {
+        AppImpl { app: &*application }
     }
 }
 
+static mut STARTUP: bool = false;
+
 impl ApplicationHandler for AppImpl {
-    fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
+    fn resumed<'a>(&mut self, event_loop: &'a winit::event_loop::ActiveEventLoop) {
+        if unsafe { STARTUP } {
+            return;
+        }
+        let f = unsafe {
+            STARTUP = true;
+            &*self.app
+        };
+        if let Some(f) = &f.on_startup {
+            f(LoopArgs::new(&event_loop));
+        }
+
         todo!()
     }
 

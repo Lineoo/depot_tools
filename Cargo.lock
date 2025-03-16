@@ -406,6 +406,7 @@ dependencies = [
  "depot_core",
  "env_logger",
  "log",
+ "widget",
 ]
 
 [[package]]

@@ -1,21 +1,26 @@
-use crate::app_impl::AppImpl;
+use crate::{app_impl::AppImpl, loop_args::LoopArgs};
 use winit::{error::EventLoopError::*, event_loop::EventLoop};
 
 pub struct Application {
-    app_impl: AppImpl,
+    app_impl: Option<AppImpl>,
     evt_loop: EventLoop<()>,
+    pub on_startup: Option<Box<dyn Fn(LoopArgs)>>,
 }
 
 impl Application {
     pub fn new() -> Self {
-        Application {
-            app_impl: AppImpl::new(),
-            evt_loop: EventLoop::new().unwrap(),
-        }
+        let evt_loop = EventLoop::new().unwrap();
+        let mut app = Application {
+            app_impl: None,
+            evt_loop,
+            on_startup: None,
+        };
+        app.app_impl = Some(AppImpl::new(&app));
+        app
     }
 
     pub fn enter_event_loop(mut self) -> i32 {
-        let result = self.evt_loop.run_app(&mut self.app_impl);
+        let result = self.evt_loop.run_app(&mut self.app_impl.unwrap());
         if let Err(err) = result {
             return match err {
                 NotSupported(_) => -128,

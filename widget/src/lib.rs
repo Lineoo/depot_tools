@@ -7,17 +7,14 @@
 // use winit::error::EventLoopError;
 // use winit::event_loop::{ControlFlow, EventLoop};
 
-#[macro_use]
-extern crate lazy_static;
-
 // mod app;
 mod app_impl;
-mod application;
+pub mod application;
 mod init;
-mod loop_args;
+pub mod loop_args;
 mod vertex;
 mod wgpu_ctx;
-mod window;
+pub mod window;
 
 // fn main() -> Result<(), EventLoopError> {
 //     env_logger::init();
