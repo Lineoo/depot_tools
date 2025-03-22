@@ -1,0 +1,20 @@
+[package]
+name = "widget"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+bytemuck.workspace = true
+env_logger.workspace = true
+lazy_static.workspace = true
+log.workspace = true
+pollster.workspace = true
+winit.workspace = true
+wgpu = "24.0.1"
+
+[lib]
+name = "widget"
+crate-type = ["dylib"]
+
+[target.'cfg(windows)'.dependencies]
+winapi = "0.3.9"

@@ -1,0 +1,10 @@
+[package]
+name = "util"
+version.workspace = true
+edition.workspace = true
+
+[lib]
+name = "util"
+crate-type = ["dylib"]
+
+[dependencies]
