@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["depot_core"]
+members = ["core"]
 
 [workspace.package]
 version = "0.1.0"
@@ -12,6 +12,7 @@ env_logger = "0.11.7"
 serde = "1.0"
 hashbrown = "0.15"
 parking_lot = "0.12.3"
+uuid = "1.16.0"
 
 ## Main package
 
@@ -23,4 +24,4 @@ edition.workspace = true
 [dependencies]
 log.workspace = true
 env_logger.workspace = true
-depot_core = { path = "depot_core" }
+depot_core.path = "core"

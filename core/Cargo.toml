@@ -1,9 +1,9 @@
 [package]
 name = "depot_core"
+description = "Basis of depot."
 version.workspace = true
 edition.workspace = true
 
 [dependencies]
-hashbrown.workspace = true
+nucleo = "0.5.0"
 log.workspace = true
-toml = "0.8.20"

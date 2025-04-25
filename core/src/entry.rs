@@ -1,0 +1,36 @@
+/// An *active* entry with full functions.
+/// ## Description Behavior ##
+/// We contact with parent first, so the children's descriptions are given by parent.
+pub trait ActiveEntry {
+    fn push(&mut self, args: EntryArgs);
+    fn read(&self, index: usize) -> Option<Description>;
+    fn call(&self, index: usize) -> Option<Invoke>;
+}
+
+
+#[derive(Clone, Debug)]
+pub struct Description {
+    pub title: String,
+    pub information: String,
+}
+
+pub type EntryArgs = String;
+
+pub type BoxedEntry = Box<dyn ActiveEntry>;
+
+pub enum Invoke {
+    Raise(BoxedEntry),
+    Update(EntryArgs),
+    Leave,
+    Exit,
+    Remain,
+} 
+
+/// ## Expected Functions ##
+/// - `EntrySpace`: use input to search, cached
+/// - `Enum`: choose variants
+/// - `Calculator`: parse input to result
+/// - `Files`: result an *infinite* number of entries
+/// - `FFmpeg Util`: need to choose multiple files/parameters
+/// - `Color Picker`: completely control the UI pass
+mod plan {}
