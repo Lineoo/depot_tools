@@ -5,12 +5,14 @@ use nucleo::{
     Config, Nucleo, Utf32String,
     pattern::{CaseMatching, Normalization},
 };
+use uuid::Uuid;
 
 use crate::entry::*;
 
 struct EntryFetch {
-    activate: fn() -> BoxedEntry,
+    activate: fn() -> Invoke,
     description: Description,
+    uuid: Uuid,
 }
 
 /// The main search engine
@@ -38,6 +40,12 @@ impl EntrySpace {
 
         Self { engine }
     }
+    fn fetch(&self, index: usize) -> Option<&EntryFetch> {
+        self.engine
+            .snapshot()
+            .get_matched_item(index.try_into().unwrap())
+            .map(|fetch| fetch.data)
+    }
 }
 impl ActiveEntry for EntrySpace {
     fn push(&mut self, args: EntryArgs) {
@@ -46,6 +54,7 @@ impl ActiveEntry for EntrySpace {
         self.engine
             .pattern
             .reparse(0, &args, CaseMatching::Ignore, Normalization::Smart, false);
+        self.engine.tick(10);
     }
     fn read(&self, index: usize) -> Option<Description> {
         self.engine
@@ -57,6 +66,72 @@ impl ActiveEntry for EntrySpace {
         self.engine
             .snapshot()
             .get_matched_item(index.try_into().unwrap())
-            .map(|item| Invoke::Raise((item.data.activate)()))
+            .map(|item| (item.data.activate)())
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn entryspace() {
+        let mut entryspace = test_entries();
+
+        entryspace.push("ubutu".into());
+        assert_eq!(
+            entryspace.fetch(0).map(|x| x.uuid),
+            Some(Uuid::from_u128(0x1e1e3d3d_b1b2_c1c2_d1d2d_3d4d5d6d7d8)),
+        );
+
+        entryspace.push("fami".into());
+        assert_eq!(entryspace.read(0).map(|x| x.title), Some("Windows".into()));
+    }
+
+    fn test_entries() -> EntrySpace {
+        EntrySpace::new(vec![
+            (
+                "linux debian".into(),
+                EntryFetch {
+                    activate: || {
+                        println!("debian");
+                        Invoke::Exit
+                    },
+                    description: Description {
+                        title: "Debian".into(),
+                        information: "Boot Debian".into(),
+                    },
+                    uuid: Uuid::from_u128(0x1e1e2d2d_b1b2_c1c2_d1d2d_3d4d5d6d7d8),
+                },
+            ),
+            (
+                "ubuntu linux debian".into(),
+                EntryFetch {
+                    activate: || {
+                        println!("ubuntu");
+                        Invoke::Exit
+                    },
+                    description: Description {
+                        title: "Ubuntu".into(),
+                        information: "Boot Ubuntu".into(),
+                    },
+                    uuid: Uuid::from_u128(0x1e1e3d3d_b1b2_c1c2_d1d2d_3d4d5d6d7d8),
+                },
+            ),
+            (
+                "windows 11 family".into(),
+                EntryFetch {
+                    activate: || {
+                        println!("windows");
+                        Invoke::Exit
+                    },
+                    description: Description {
+                        title: "Windows".into(),
+                        information: "Boot Windows 11 Family Edition".into(),
+                    },
+                    uuid: Uuid::from_u128(0x1e1e4d4d_b1b2_c1c2_d1d2d_3d4d5d6d7d8),
+                },
+            ),
+        ])
     }
 }
