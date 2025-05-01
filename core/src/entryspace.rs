@@ -5,14 +5,12 @@ use nucleo::{
     Config, Nucleo, Utf32String,
     pattern::{CaseMatching, Normalization},
 };
-use uuid::Uuid;
 
 use crate::entry::*;
 
-struct EntryFetch {
-    activate: fn() -> Invoke,
-    description: Description,
-    uuid: Uuid,
+pub struct EntryFetch {
+    pub activate: fn() -> Invoke,
+    pub description: Description,
 }
 
 /// The main search engine
@@ -20,7 +18,7 @@ pub struct EntrySpace {
     engine: Nucleo<EntryFetch>,
 }
 impl EntrySpace {
-    fn new(list: Vec<(String, EntryFetch)>) -> Self {
+    pub fn new(list: Vec<(String, EntryFetch)>) -> Self {
         let config = Config::DEFAULT;
         let engine = Nucleo::new(config, Arc::new(|| ()), None, 1);
 
@@ -40,11 +38,45 @@ impl EntrySpace {
 
         Self { engine }
     }
-    fn fetch(&self, index: usize) -> Option<&EntryFetch> {
-        self.engine
-            .snapshot()
-            .get_matched_item(index.try_into().unwrap())
-            .map(|fetch| fetch.data)
+    pub fn from_toml(text: String) -> Option<Self> {
+        let config = Config::DEFAULT;
+        let engine = Nucleo::new(config, Arc::new(|| ()), None, 1);
+
+        let toml = toml::Table::try_from(text).ok()?;
+        let entries = toml.get("entry").and_then(|x| x.as_array())?;
+
+        let injector = engine.injector();
+        for each in entries {
+            let Some(key) = each.get("name").and_then(|x| x.as_str()) else {
+                continue;
+            };
+            if !key.is_ascii() {
+                warn!(
+                    "Non-ascii key: \"{}\"! Only valid ascii strings are accepted.",
+                    key
+                );
+                continue;
+            }
+            let fetch = EntryFetch {
+                activate: || todo!(),
+                description: Description {
+                    title: each
+                        .get("title")
+                        .and_then(|x| x.as_str())
+                        .unwrap_or("<No title>")
+                        .into(),
+                    information: each
+                        .get("information")
+                        .and_then(|x| x.as_str())
+                        .unwrap_or_default()
+                        .into(),
+                }
+            };
+            injector.push(fetch, |_, slice| {
+                slice[0] = Utf32String::Ascii(key.into());
+            });
+        }
+        Some(Self { engine })
     }
 }
 impl ActiveEntry for EntrySpace {
@@ -79,10 +111,7 @@ mod test {
         let mut entryspace = test_entries();
 
         entryspace.push("ubutu".into());
-        assert_eq!(
-            entryspace.fetch(0).map(|x| x.uuid),
-            Some(Uuid::from_u128(0x1e1e3d3d_b1b2_c1c2_d1d2d_3d4d5d6d7d8)),
-        );
+        assert_eq!(entryspace.read(0).map(|x| x.title), Some("Ubuntu".into()));
 
         entryspace.push("fami".into());
         assert_eq!(entryspace.read(0).map(|x| x.title), Some("Windows".into()));
@@ -100,8 +129,7 @@ mod test {
                     description: Description {
                         title: "Debian".into(),
                         information: "Boot Debian".into(),
-                    },
-                    uuid: Uuid::from_u128(0x1e1e2d2d_b1b2_c1c2_d1d2d_3d4d5d6d7d8),
+                    }
                 },
             ),
             (
@@ -114,8 +142,7 @@ mod test {
                     description: Description {
                         title: "Ubuntu".into(),
                         information: "Boot Ubuntu".into(),
-                    },
-                    uuid: Uuid::from_u128(0x1e1e3d3d_b1b2_c1c2_d1d2d_3d4d5d6d7d8),
+                    }
                 },
             ),
             (
@@ -128,8 +155,7 @@ mod test {
                     description: Description {
                         title: "Windows".into(),
                         information: "Boot Windows 11 Family Edition".into(),
-                    },
-                    uuid: Uuid::from_u128(0x1e1e4d4d_b1b2_c1c2_d1d2d_3d4d5d6d7d8),
+                    }
                 },
             ),
         ])

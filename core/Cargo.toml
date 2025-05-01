@@ -4,13 +4,14 @@ description = "Basis of depot."
 version.workspace = true
 edition.workspace = true
 
-[lib]
-crate-type = ["dylib"]
+# [lib]
+# crate-type = ["dylib"]
 
 [dependencies]
 nucleo = "0.5.0"
 log.workspace = true
 uuid.workspace = true
+toml = "0.8.21"
 
 [dev-dependencies]
 ratatui = "0.29.0"
