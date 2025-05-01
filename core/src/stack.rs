@@ -29,12 +29,12 @@ impl Stack {
         last.active.push(args);
     }
 
-    pub fn read(&self, index: usize) -> Option<Description> {
+    pub fn read(&self, index: usize) -> Option<Read> {
         let Some(last) = self.0.last() else {
             if index == 0 {
-                return Some(Description {
+                return Some(Read {
                     title: "EntryStack is empty.".into(),
-                    information: "No entry here yet".into(),
+                    description: "No entry here yet".into(),
                 });
             } else {
                 return None;
@@ -81,7 +81,7 @@ impl Stack {
 
 pub struct IntoIter<'stack>(usize, &'stack Stack);
 impl Iterator for IntoIter<'_> {
-    type Item = Description;
+    type Item = Read;
 
     fn next(&mut self) -> Option<Self::Item> {
         let result = self.1.read(self.0);
@@ -91,7 +91,7 @@ impl Iterator for IntoIter<'_> {
 }
 
 impl<'stack> IntoIterator for &'stack Stack {
-    type Item = Description;
+    type Item = Read;
 
     type IntoIter = IntoIter<'stack>;
 
@@ -104,6 +104,58 @@ impl<'stack> IntoIterator for &'stack Stack {
 mod test {
     use super::*;
 
+    /// # Behavior
+    /// ```text
+    ///   0. <user input>       - User input (Exit)
+    ///   1. <user input>       - User input (Remain)
+    ///   2. <user input> * 2   - Repeat it twice
+    ///   3. ..                 - Back to parent entry
+    ///   4. Raise              - Raise entry   - Entry: TestEntry("Test")
+    /// ```
+    struct TestEntry(pub String);
+
+    impl ActiveEntry for TestEntry {
+        fn push(&mut self, args: EntryArgs) {
+            self.0.clone_from(&args);
+        }
+
+        fn read(&self, index: usize) -> Option<Read> {
+            match index {
+                0 => Some(Read {
+                    title: self.0.clone(),
+                    description: "User input (Exit)".into(),
+                }),
+                1 => Some(Read {
+                    title: self.0.clone(),
+                    description: "User input (Remain)".into(),
+                }),
+                2 => Some(Read {
+                    title: format!("{} * 2", self.0),
+                    description: "Repeat it twice".into(),
+                }),
+                3 => Some(Read {
+                    title: "..".into(),
+                    description: "Back to parent entry".into(),
+                }),
+                4 => Some(Read {
+                    title: "Raise".into(),
+                    description: "Raise entry".into(),
+                }),
+                _ => None,
+            }
+        }
+
+        fn call(&self, index: usize) -> Option<Invoke> {
+            match index {
+                0 => Some(Invoke::Exit),
+                1 => Some(Invoke::Remain),
+                2 => Some(Invoke::Update(self.0.clone().repeat(2))),
+                3 => Some(Invoke::Leave),
+                4 => Some(Invoke::Raise(Box::new(TestEntry("Test".into())))),
+                _ => None,
+            }
+        }
+    }
     #[test]
     fn stack() {
         let mut stack = Stack::new(Box::new(TestEntry("EntryStackTest".into())));

@@ -11,6 +11,7 @@ edition.workspace = true
 nucleo = "0.5.0"
 log.workspace = true
 uuid.workspace = true
+hashbrown.workspace = true
 toml = "0.8.21"
 
 [dev-dependencies]
