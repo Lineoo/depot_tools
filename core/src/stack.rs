@@ -156,6 +156,7 @@ mod test {
             }
         }
     }
+    
     #[test]
     fn stack() {
         let mut stack = Stack::new(Box::new(TestEntry("EntryStackTest".into())));

@@ -26,3 +26,6 @@ edition.workspace = true
 log.workspace = true
 env_logger.workspace = true
 depot_core.path = "core"
+
+[dev-dependencies]
+ratatui = "0.29.0"

@@ -24,7 +24,7 @@ pub struct Entry {
 /// # Features
 /// ### fuzzy search
 /// Use [`Nucleo`] as the fuzzy search engine.
-/// ### trigger
+/// ### auto trigger
 /// You can register an `trigger` in config file like this:
 /// ```toml
 /// [[entry]]
@@ -209,7 +209,7 @@ mod test {
     use super::*;
 
     #[test]
-    fn entryspace() {
+    fn basis() {
         const TEST_STR: &str = r#"
 [[entry]]
 name = "orange fruit"
