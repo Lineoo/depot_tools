@@ -25,7 +25,14 @@ pub enum Invoke {
     Leave,
     Exit,
     Remain,
+    // TODO: Invoke::Home
 }
+
+// TODO: `PureFunctionEntry` that implement a buffer for use and plugin maker only
+//      need to write a function. That'll be easy.
+
+// TODO: ULTIMATE-ULTRA-PLUS-STRING-CLONING-COSTS-
+//      That's cool. Ownership? Clone. 
 
 /// ## Expected Functions ##
 /// - `EntrySpace`: use input to search, cached

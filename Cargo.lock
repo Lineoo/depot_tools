@@ -80,6 +80,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5c8214115b7bf84099f1309324e63141d4c5d7cc26862f97a0a857dbefe165bd"
 
 [[package]]
+name = "calculator-rs"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c8338e12e09bf5bd17a9c7fd54bc402b0b234f6b8e2cf21a4ed54e11c3e74be8"
+
+[[package]]
 name = "cassowary"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -206,10 +212,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "depot_calc"
+version = "0.1.0"
+dependencies = [
+ "calculator-rs",
+ "depot_core",
+]
+
+[[package]]
 name = "depot_core"
 version = "0.1.0"
 dependencies = [
  "hashbrown",
+ "libloading",
  "log",
  "nucleo",
  "toml",
@@ -397,6 +412,16 @@ name = "libc"
 version = "0.2.172"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d750af042f7ef4f724306de029d18836c26c1765a54a6a3f094cbd23a7267ffa"
+
+[[package]]
+name = "libloading"
+version = "0.8.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fc2f4eb4bc735547cfed7c0a4922cbd04a4655978c09b54f1f7b228750664c34"
+dependencies = [
+ "cfg-if",
+ "windows-targets",
+]
 
 [[package]]
 name = "linux-raw-sys"

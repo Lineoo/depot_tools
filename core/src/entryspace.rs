@@ -1,4 +1,4 @@
-use std::{str::FromStr, sync::Arc};
+use std::{process::Command, str::FromStr, sync::Arc};
 
 use hashbrown::HashMap;
 use log::*;
@@ -13,22 +13,30 @@ use crate::entry::*;
 /// Single fetch of an entry.
 #[derive(Clone)]
 pub struct Entry {
-    pub invoke: fn() -> Invoke,
+    pub invoke: Arc<dyn Fn() -> Invoke + Send + Sync>,
     pub read: Read,
     pub uuid: Uuid,
 }
 
-/// The main search engine
+/// The core component for the entries' access. EntrySpace allows storing a collection of [`Entry`]s
+/// and specific their behavior for use, and contains a lot of utilities like searching and auto-trigger.
+///
 /// # Initialize
 /// See [`EntrySpace::from_toml`] for details.
-/// # Features
+///
+/// # Usage
+/// ### toml configuration
+/// Initialize `EntrySpace` from toml file with [`from_toml`](EntrySpace::from_toml) method.
+/// See [`EntrySpace::from_toml`] for details.
+///
 /// ### fuzzy search
 /// Use [`Nucleo`] as the fuzzy search engine.
+///
 /// ### auto trigger
 /// You can register an `trigger` in config file like this:
 /// ```toml
 /// [[entry]]
-/// auto_trigger = ":calc"
+/// trigger = ":calc"
 /// crate-type = "dylib"
 /// path = "plugins/calc_helper"
 /// ```
@@ -69,20 +77,20 @@ impl EntrySpace {
     /// Return [`EntrySpace`] from toml-formatted string.
     /// # Example
     /// ``` toml
-    /// # all entries are stored in array `entry`
-    /// [[entry]]
-    /// # The `search name` used by engine
-    /// name = "fruit orange"
-    /// # Title to display
-    /// title = "Orange"
-    /// # The description, usually next to title
-    /// description = "This is an orange. It's orange."
-    /// # Trigger prefix
-    /// trigger = ":og"
-    /// # Type of this entry
-    /// entry-type = "shell"
-    /// # Other arguments required by `entry-type`
-    /// exec = "orange init"
+    /// # `entry` contains all entries.
+    /// [[entry]]               
+    /// name = "fruit orange"   # The `search name` used by engine
+    /// title = "Orange"        # Title to display
+    /// description = "This is an orange. It's orange." # The description, typically next to title
+    /// trigger = ":og"         # Trigger prefix
+    /// entry-type = "shell"    # Type of this entry, a key defined in `loader`
+    /// exec = "orange"         # Other arguments required by `entry-type`
+    /// args = ["init"]
+    ///
+    /// # TODO: `loader` table defines custom loaders
+    /// [loader.fruit]
+    /// base = "rust"           # Available variables: rust
+    /// path = "fruit.dll"      # Path to loader library
     /// ```
     pub fn from_toml(text: String) -> Option<Self> {
         let config = Config::DEFAULT;
@@ -96,8 +104,35 @@ impl EntrySpace {
         // Builtin key: name, title, description, crate-type, trigger
         let injector = engine.injector();
         for each in toml.get("entry").and_then(|x| x.as_array())? {
+            // Prepare the loader
+            let invoke: Arc<dyn Fn() -> Invoke + Send + Sync> =
+                match each.get("crate-type").and_then(|x| x.as_str()) {
+                    Some("shell") => {
+                        let exec = each.get("exec").and_then(|x| x.as_str());
+                        let args = each.get("args").and_then(|x| x.as_array());
+                        if let Some(exec) = exec {
+                            let exec = exec.to_string();
+                            let args = args.cloned();
+                            Arc::new(move || {
+                                // TODO: Should we use "exec" or leave it untouched?
+                                Command::new(&exec)
+                                    .args(args.iter().flatten().filter_map(|x| x.as_str()))
+                                    .spawn()
+                                    .expect("failed to start shell command")
+                                    .wait()
+                                    .expect("error");
+                                Invoke::Exit
+                            })
+                        } else {
+                            Arc::new(|| Invoke::Raise(Box::new("Shell entry lack of `exec` key!")))
+                        }
+                    }
+                    Some(_) => Arc::new(|| Invoke::Raise(Box::new("Unrecognized crate-type!"))),
+                    None => Arc::new(|| Invoke::Raise(Box::new("No valid crate-type key!"))),
+                };
+
             let entry = Entry {
-                invoke: || Invoke::Update("TODO".into()),
+                invoke,
                 read: Read {
                     title: each
                         .get("title")
@@ -151,6 +186,7 @@ impl EntrySpace {
 impl ActiveEntry for EntrySpace {
     fn push(&mut self, args: EntryArgs) {
         // Auto Trigger
+        // BUG: Cannot exit trigger
         if let Some((prefix, args)) = args.split_once(' ') {
             if let Some(trigger) = self.triggers.get(prefix) {
                 match self.active_trigger.as_mut() {

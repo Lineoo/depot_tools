@@ -1,0 +1,56 @@
+[[entry]]
+name = "orange"
+title = "Orange"
+description = "This is an orange. It's orange."
+
+[[entry]]
+name = "apple"
+title = "Apple"
+description = "This is an apple. It's not orange but red."
+
+[[entry]]
+name = "banana"
+title = "Banana"
+description = "This is a banana. BANANA!"
+
+[[entry]]
+name = "cow"
+title = "Cow"
+description = "This is a cow."
+
+[[entry]]
+name = "dog"
+title = "Dog"
+description = "Doggy."
+
+[[entry]]
+name = "cat"
+title = "Cat"
+description = "Meow, meow."
+
+[[entry]]
+name = "apple phone"
+title = "Apple Phone"
+description = "This is an apple. It's not fruit but a phone."
+
+[[entry]]
+name = "pineapple phone"
+title = "Pineapple Phone"
+description = "This is the latest oPhone."
+
+[[entry]]
+name = "linux mint xia"
+title = "LinuxMint Xia"
+description = "This is LinuxMint."
+
+[[entry]]
+name = "debian bookworm linux"
+title = "Debian Bookworm"
+description = "This is Debian."
+
+[[entry]]
+name = "neovim nvim"
+title = "Neovim"
+description = "Open Neovim."
+crate-type = "shell"
+exec = "nvim"

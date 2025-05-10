@@ -1,4 +1,3 @@
-use std::io;
 use depot_core::{
     entryspace::EntrySpace,
     stack::{Stack, StackCall},
@@ -11,6 +10,7 @@ use ratatui::{
     text::{Line, Span},
     widgets::{Block, List, ListItem, ListState, Paragraph},
 };
+use std::io;
 
 fn main() -> io::Result<()> {
     let terminal = ratatui::init();
@@ -29,52 +29,10 @@ struct App {
 
 impl App {
     fn new() -> Self {
-        const EXAMPLE_STR: &str = r#"
-[[entry]]
-name = "orange"
-title = "Orange"
-description = "This is an orange. It's orange."
-[[entry]]
-name = "apple"
-title = "Apple"
-description = "This is an apple. It's not orange but red."
-[[entry]]
-name = "banana"
-title = "Banana"
-description = "This is a banana. BANANA!"
-[[entry]]
-name = "cow"
-title = "Cow"
-description = "This is a cow."
-[[entry]]
-name = "dog"
-title = "Dog"
-description = "Doggy."
-[[entry]]
-name = "cat"
-title = "Cat"
-description = "Meow, meow."
-[[entry]]
-name = "apple phone"
-title = "Apple Phone"
-description = "This is an apple. It's not fruit but a phone."
-[[entry]]
-name = "pineapple phone"
-title = "Pineapple Phone"
-description = "This is the latest oPhone."
-[[entry]]
-name = "linux mint xia"
-title = "LinuxMint Xia"
-description = "This is LinuxMint."
-[[entry]]
-name = "debian bookworm linux"
-title = "Debian Bookworm"
-description = "This is Debian."
-"#;
         Self {
             input: String::new(),
             stack: Stack::new(Box::new(
-                EntrySpace::from_toml(String::from(EXAMPLE_STR)).unwrap(),
+                EntrySpace::from_toml(String::from(include_str!("config.toml"))).unwrap(),
             )),
             character_index: 0,
             state: ListState::default(),

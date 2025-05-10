@@ -1,0 +1,11 @@
+[package]
+name = "depot_calc"
+version.workspace = true
+edition.workspace = true
+
+[lib]
+crate-type = ["dylib"]
+
+[dependencies]
+depot_core.path = "../../core"
+calculator-rs = "*"

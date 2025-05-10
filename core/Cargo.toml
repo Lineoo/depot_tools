@@ -13,3 +13,4 @@ log.workspace = true
 uuid.workspace = true
 hashbrown.workspace = true
 toml = "0.8.21"
+libloading = "0.8.6"
