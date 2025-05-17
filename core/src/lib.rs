@@ -5,6 +5,7 @@ pub mod entry;
 pub mod entryspace;
 pub mod stack;
 pub mod implement;
+mod search;
 
 /// ## Expected Functions ##
 /// - `EntrySpace`: use input to search, cached

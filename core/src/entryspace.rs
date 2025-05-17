@@ -1,14 +1,11 @@
 use std::{process::Command, str::FromStr, sync::Arc};
 
+use fuzzy_matcher::skim::{SkimMatcherV2, SkimScoreConfig};
 use hashbrown::HashMap;
 use log::*;
-use nucleo::{
-    Config, Nucleo, Utf32String,
-    pattern::{CaseMatching, Normalization},
-};
 use uuid::Uuid;
 
-use crate::entry::*;
+use crate::{entry::*, search::SearchEngine};
 
 /// Single fetch of an entry.
 #[derive(Clone)]
@@ -44,7 +41,7 @@ pub struct Entry {
 /// call calculator with arguments `2 + 1`
 pub struct EntrySpace {
     /// The core fuzzy search engine used by depot
-    engine: Nucleo<Entry>,
+    engine: SearchEngine<Entry>,
     triggers: HashMap<String, Entry>,
     active_trigger: Option<(Uuid, BoxedEntry)>,
 }
@@ -93,8 +90,7 @@ impl EntrySpace {
     /// path = "fruit.dll"      # Path to loader library
     /// ```
     pub fn from_toml(text: String) -> Option<Self> {
-        let config = Config::DEFAULT;
-        let engine = Nucleo::new(config, Arc::new(|| ()), None, 1);
+        let mut engine = SearchEngine::new();
         let mut triggers = HashMap::new();
 
         // Init toml
@@ -102,7 +98,6 @@ impl EntrySpace {
 
         // Load [[entry]] array
         // Builtin key: name, title, description, crate-type, trigger
-        let injector = engine.injector();
         for each in toml.get("entry").and_then(|x| x.as_array())? {
             // Prepare the loader
             let invoke: Arc<dyn Fn() -> Invoke + Send + Sync> =
@@ -169,9 +164,7 @@ impl EntrySpace {
                         Only valid ascii strings are accepted for entry name.",
                     );
                 } else {
-                    injector.push(entry, |_, slice| {
-                        slice[0] = Utf32String::Ascii(name.into());
-                    });
+                    engine.push(name.to_string(), entry);
                 }
             };
         }
@@ -212,31 +205,21 @@ impl ActiveEntry for EntrySpace {
             }
         }
 
-        // TODO: supports `append` param in reparse(..) for better performance
-        self.engine
-            .pattern
-            .reparse(0, &args, CaseMatching::Ignore, Normalization::Smart, false);
-        self.engine.tick(10);
+        self.engine.search(&args);
     }
     fn read(&self, index: usize) -> Option<Read> {
         if let Some(active) = &self.active_trigger {
             return active.1.read(index);
         }
 
-        self.engine
-            .snapshot()
-            .get_matched_item(index.try_into().unwrap())
-            .map(|fetch| fetch.data.read.clone())
+        self.engine.get(index).map(|fetch| fetch.read.clone())
     }
     fn call(&self, index: usize) -> Option<Invoke> {
         if let Some(active) = &self.active_trigger {
             return active.1.call(index);
         }
 
-        self.engine
-            .snapshot()
-            .get_matched_item(index.try_into().unwrap())
-            .map(|item| (item.data.invoke)())
+        self.engine.get(index).map(|item| (item.invoke)())
     }
 }
 
