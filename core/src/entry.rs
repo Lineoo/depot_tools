@@ -33,12 +33,3 @@ pub enum Invoke {
 
 // TODO: ULTIMATE-ULTRA-PLUS-STRING-CLONING-COSTS-
 //      That's cool. Ownership? Clone. 
-
-/// ## Expected Functions ##
-/// - `EntrySpace`: use input to search, cached
-/// - `Enum`: choose variants
-/// - `Calculator`: parse input to result
-/// - `Files`: result an *infinite* number of entries
-/// - `FFmpeg Util`: need to choose multiple files/parameters
-/// - `Color Picker`: completely control the UI pass
-mod plan {}
