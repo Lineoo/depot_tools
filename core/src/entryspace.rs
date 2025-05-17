@@ -1,18 +1,18 @@
 use std::{process::Command, str::FromStr, sync::Arc};
 
-use fuzzy_matcher::skim::{SkimMatcherV2, SkimScoreConfig};
 use hashbrown::HashMap;
 use log::*;
-use uuid::Uuid;
 
 use crate::{entry::*, search::SearchEngine};
+
+type Ident = u64;
 
 /// Single fetch of an entry.
 #[derive(Clone)]
 pub struct Entry {
     pub invoke: Arc<dyn Fn() -> Invoke + Send + Sync>,
     pub read: Read,
-    pub uuid: Uuid,
+    pub ident: Ident,
 }
 
 /// The core component for the entries' access. EntrySpace allows storing a collection of [`Entry`]s
@@ -43,7 +43,7 @@ pub struct EntrySpace {
     /// The core fuzzy search engine used by depot
     engine: SearchEngine<Entry>,
     triggers: HashMap<String, Entry>,
-    active_trigger: Option<(Uuid, BoxedEntry)>,
+    active_trigger: Option<(Ident, BoxedEntry)>,
 }
 impl EntrySpace {
     // pub fn new(list: Vec<(String, EntryFetch)>) -> Self {
@@ -140,7 +140,7 @@ impl EntrySpace {
                         .unwrap_or_default()
                         .into(),
                 },
-                uuid: Uuid::new_v4(),
+                ident: getrandom::u64().ok()?,
             };
 
             // Auto Trigger
@@ -184,7 +184,7 @@ impl ActiveEntry for EntrySpace {
             if let Some(trigger) = self.triggers.get(prefix) {
                 match self.active_trigger.as_mut() {
                     // The same trigger
-                    Some(active) if active.0 == trigger.uuid => {
+                    Some(active) if active.0 == trigger.ident => {
                         active.1.push(args.to_string());
                     }
                     // A different trigger or no trigger
@@ -196,7 +196,7 @@ impl ActiveEntry for EntrySpace {
                                 that doesn't accept arguments",
                             ),
                         };
-                        self.active_trigger.replace((trigger.uuid, active));
+                        self.active_trigger.replace((trigger.ident, active));
                     }
                 }
                 return;

@@ -9,7 +9,7 @@ crate-type = ["dylib"]
 
 [dependencies]
 log.workspace = true
-uuid.workspace = true
+getrandom = "0.3.3"
 hashbrown.workspace = true
 toml = "0.8.21"
 libloading = "0.8.6"
