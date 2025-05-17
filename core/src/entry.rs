@@ -1,12 +1,14 @@
 /// An *active* entry with full functions.
 /// ## Description Behavior ##
 /// We contact with parent first, so the children's descriptions are given by parent.
+#[expect(unused_variables)]
 pub trait ActiveEntry {
-    /// *Update* the current active entry with given args
     fn push(&mut self, args: EntryArgs);
-    /// Return a information of one sub-entry
     fn read(&self, index: usize) -> Option<Read>;
     fn call(&self, index: usize) -> Option<Invoke>;
+    fn raise(&self, index: usize) -> Option<BoxedEntry> {
+        None
+    }
 }
 
 #[derive(Clone, Debug)]

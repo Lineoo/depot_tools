@@ -11,6 +11,7 @@ type Ident = u64;
 #[derive(Clone)]
 pub struct Entry {
     pub invoke: Arc<dyn Fn() -> Invoke + Send + Sync>,
+    pub raise: Arc<dyn Fn() -> BoxedEntry + Send + Sync>,
     pub read: Read,
     pub ident: Ident,
 }
@@ -100,34 +101,49 @@ impl EntrySpace {
         // Builtin key: name, title, description, crate-type, trigger
         for each in toml.get("entry").and_then(|x| x.as_array())? {
             // Prepare the loader
-            let invoke: Arc<dyn Fn() -> Invoke + Send + Sync> =
-                match each.get("crate-type").and_then(|x| x.as_str()) {
-                    Some("shell") => {
-                        let exec = each.get("exec").and_then(|x| x.as_str());
-                        let args = each.get("args").and_then(|x| x.as_array());
-                        if let Some(exec) = exec {
-                            let exec = exec.to_string();
-                            let args = args.cloned();
-                            Arc::new(move || {
-                                // TODO: Should we use "exec" or leave it untouched?
-                                Command::new(&exec)
-                                    .args(args.iter().flatten().filter_map(|x| x.as_str()))
-                                    .spawn()
-                                    .expect("failed to start shell command")
-                                    .wait()
-                                    .expect("error");
-                                Invoke::Exit
+            let invoke: Arc<dyn Fn() -> Invoke + Send + Sync>;
+            let raise: Arc<dyn Fn() -> BoxedEntry + Send + Sync>;
+            match each.get("crate-type").and_then(|x| x.as_str()) {
+                Some("shell") => {
+                    let exec = each.get("exec").and_then(|x| x.as_str());
+                    let args = each.get("args").and_then(|x| x.as_array());
+                    if let Some(exec) = exec {
+                        let exec = exec.to_string();
+                        let args = args
+                            .into_iter()
+                            .flat_map(|x| {
+                                x.iter().filter_map(|x| x.as_str()).map(|x| x.to_string())
                             })
-                        } else {
-                            Arc::new(|| Invoke::Raise(Box::new("Shell entry lack of `exec` key!")))
-                        }
+                            .collect::<Vec<_>>();
+                        invoke = Arc::new(move || {
+                            Command::new(&exec)
+                                .args(args.iter())
+                                .spawn()
+                                .expect("failed to start shell command")
+                                .wait()
+                                .expect("error");
+                            Invoke::Exit
+                        });
+                        raise = Arc::new(|| Box::new("Not support"));
+                    } else {
+                        invoke =
+                            Arc::new(|| Invoke::Raise(Box::new("Shell entry lack of `exec` key!")));
+                        raise = Arc::new(|| Box::new("Not support"));
                     }
-                    Some(_) => Arc::new(|| Invoke::Raise(Box::new("Unrecognized crate-type!"))),
-                    None => Arc::new(|| Invoke::Raise(Box::new("No valid crate-type key!"))),
-                };
+                }
+                Some(_) => {
+                    invoke = Arc::new(|| Invoke::Raise(Box::new("Unrecognized crate-type!")));
+                    raise = Arc::new(|| Box::new("Not support"));
+                }
+                None => {
+                    invoke = Arc::new(|| Invoke::Raise(Box::new("No valid crate-type key!")));
+                    raise = Arc::new(|| Box::new("Not support"));
+                }
+            };
 
             let entry = Entry {
                 invoke,
+                raise,
                 read: Read {
                     title: each
                         .get("title")
@@ -189,13 +205,7 @@ impl ActiveEntry for EntrySpace {
                     }
                     // A different trigger or no trigger
                     Some(_) | None => {
-                        let active = match (trigger.invoke)() {
-                            Invoke::Raise(active) => active,
-                            _ => Box::new(
-                                "[ERR] This trigger is registered on an entry \
-                                that doesn't accept arguments",
-                            ),
-                        };
+                        let active = (trigger.raise)();
                         self.active_trigger.replace((trigger.ident, active));
                     }
                 }
