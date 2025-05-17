@@ -16,7 +16,30 @@ impl ActiveEntry for &str {
 
     fn call(&self, index: usize) -> Option<Invoke> {
         if index == 0 {
-            Some(Invoke::Remain)
+            Some(Invoke::Leave)
+        } else {
+            None
+        }
+    }
+}
+
+impl ActiveEntry for String {
+    fn push(&mut self, _: EntryArgs) {}
+
+    fn read(&self, index: usize) -> Option<Read> {
+        if index == 0 {
+            Some(Read {
+                title: "Message".into(),
+                description: self.to_string(),
+            })
+        } else {
+            None
+        }
+    }
+
+    fn call(&self, index: usize) -> Option<Invoke> {
+        if index == 0 {
+            Some(Invoke::Leave)
         } else {
             None
         }

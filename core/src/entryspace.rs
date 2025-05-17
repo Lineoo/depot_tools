@@ -86,8 +86,9 @@ impl EntrySpace {
     /// args = ["init"]
     ///
     /// # TODO: `loader` table defines custom loaders
+    /// # builtin loader: dylib, *cdylib, shell, *lua
     /// [loader.fruit]
-    /// base = "rust"           # Available variables: rust
+    /// base = "rust"           # Available variables: *rust, *lua, *bin
     /// path = "fruit.dll"      # Path to loader library
     /// ```
     pub fn from_toml(text: String) -> Option<Self> {
@@ -124,20 +125,49 @@ impl EntrySpace {
                                 .expect("error");
                             Invoke::Exit
                         });
-                        raise = Arc::new(|| Box::new("Not support"));
+                        raise = Arc::new(|| Box::new("No raise-support for shell entry"));
                     } else {
                         invoke =
                             Arc::new(|| Invoke::Raise(Box::new("Shell entry lack of `exec` key!")));
-                        raise = Arc::new(|| Box::new("Not support"));
+                        raise = Arc::new(|| Box::new("Shell entry lack of `exec` key!"));
+                    }
+                }
+                Some("dylib") => {
+                    if let Some(path) = each.get("path").and_then(|x| x.as_str()) {
+                        // loading lib
+                        let path = path.to_string();
+                        let action = move || -> Result<BoxedEntry, Box<dyn std::error::Error>> {
+                            use libloading::*;
+
+                            // TODO: User Confirmation
+                            // Safety: No. No safety at all. That depends on users.
+                            unsafe {
+                                let lib = Library::new(&path)?;
+                                let func = lib.get::<unsafe fn() -> BoxedEntry>(b"entry")?;
+                                Ok(func())
+                            }
+                        };
+                        // error handing
+                        let action = move || match action() {
+                            Ok(entry) => entry,
+                            Err(e) => Box::new(e.to_string())
+                        };
+                        let action = Arc::new(action);
+                        raise = action.clone();
+                        invoke = Arc::new(move || Invoke::Raise(action()));
+                    } else {
+                        invoke =
+                            Arc::new(|| Invoke::Raise(Box::new("Dylib entry lack of `path` key!")));
+                        raise = Arc::new(|| Box::new("Dylib entry lack of `path` key!"));
                     }
                 }
                 Some(_) => {
                     invoke = Arc::new(|| Invoke::Raise(Box::new("Unrecognized crate-type!")));
-                    raise = Arc::new(|| Box::new("Not support"));
+                    raise = Arc::new(|| Box::new("Unrecognized crate-type!"));
                 }
                 None => {
                     invoke = Arc::new(|| Invoke::Raise(Box::new("No valid crate-type key!")));
-                    raise = Arc::new(|| Box::new("Not support"));
+                    raise = Arc::new(|| Box::new("No valid crate-type key!"));
                 }
             };
 

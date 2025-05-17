@@ -140,7 +140,11 @@ impl App {
                         KeyCode::Right => self.move_cursor_right(),
                         KeyCode::Up => self.move_selector_up(),
                         KeyCode::Down => self.move_selector_down(),
-                        KeyCode::Esc => return Ok(()),
+                        KeyCode::Esc => {
+                            if let StackCall::Exit = self.stack.leave() {
+                                return Ok(());
+                            }
+                        },
                         _ => {}
                     }
                 }

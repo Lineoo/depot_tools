@@ -44,6 +44,15 @@ impl Stack {
         last.active.read(index)
     }
 
+    pub fn leave(&mut self) -> StackCall  {
+        self.0.pop();
+        if let Some(back) = self.0.last() {
+            StackCall::With(back.args.clone())
+        } else {
+            StackCall::Exit
+        }
+    }
+
     pub fn call(&mut self, index: usize) -> StackCall {
         let Some(last) = self.0.last() else {
             return StackCall::Exit;
