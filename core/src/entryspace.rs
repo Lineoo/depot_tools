@@ -225,7 +225,6 @@ impl EntrySpace {
 impl ActiveEntry for EntrySpace {
     fn push(&mut self, args: EntryArgs) {
         // Auto Trigger
-        // BUG: Cannot exit trigger
         if let Some((prefix, args)) = args.split_once(' ') {
             if let Some(trigger) = self.triggers.get(prefix) {
                 match self.active_trigger.as_mut() {
@@ -240,11 +239,10 @@ impl ActiveEntry for EntrySpace {
                     }
                 }
                 return;
-            } else {
-                self.active_trigger.take();
             }
         }
 
+        self.active_trigger.take();
         self.engine.search(&args);
     }
     fn read(&self, index: usize) -> Option<Read> {
