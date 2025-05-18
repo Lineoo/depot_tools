@@ -79,7 +79,7 @@ impl WgpuCtx {
 
         let render_pipeline = create_pipeline(&device, surface_config.format);
 
-        let bytes: &[u8] = bytemuck::cast_slice(&VERTEX_LIST);
+        let bytes: &[u8] = bytemuck::cast_slice(VERTEX_LIST);
         let vertex_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: None,
             contents: bytes,

@@ -59,15 +59,21 @@ impl Application {
     }
 }
 
+impl Default for Application {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ApplicationHandler for Application {
-    fn resumed<'a>(&mut self, event_loop: &'a winit::event_loop::ActiveEventLoop) {
+    fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
         if self.started {
             return;
         }
         self.started = true;
 
         if let Some(f) = self.on_startup.take() {
-            f(AppContext::new(&event_loop, self));
+            f(AppContext::new(event_loop, self));
         }
 
         // todo!()

@@ -27,40 +27,40 @@ impl Button {
 }
 
 impl Control for Button {
-    fn set_parent(self: &mut Self, parent: Weak<dyn Control>) {
+    fn set_parent(&mut self, parent: Weak<dyn Control>) {
         self.parent = parent;
     }
 
-    fn get_parent(self: &Self) -> Weak<dyn Control> {
+    fn get_parent(&self) -> Weak<dyn Control> {
         self.parent.clone()
     }
 
-    fn get_parent_mut(self: &mut Self) -> Weak<dyn Control> {
+    fn get_parent_mut(&mut self) -> Weak<dyn Control> {
         self.parent.clone()
     }
 
-    fn ancestor(self: &Self) -> *const crate::window::Window {
+    fn ancestor(&self) -> *const crate::window::Window {
         self.ancestor
     }
 
-    fn ancestor_mut(self: &Self) -> *mut crate::window::Window {
+    fn ancestor_mut(&self) -> *mut crate::window::Window {
         self.ancestor as *mut Window
     }
 
-    fn paint(self: &Self, painter: &mut crate::wgpu_ctx::WgpuCtx) {
+    fn paint(&self, painter: &mut crate::wgpu_ctx::WgpuCtx) {
         todo!();
     }
 
-    fn reg_tree(self: &Self, window: &mut Window) {
+    fn reg_tree(&self, window: &mut Window) {
         todo!();
         // window.add_control(self as *const dyn Control as *mut dyn Control);
     }
 
-    fn address(self: &Self) -> *const dyn Control {
+    fn address(&self) -> *const dyn Control {
         self as *const dyn Control
     }
 
-    fn address_mut(self: &mut Self) -> *mut dyn Control {
+    fn address_mut(&mut self) -> *mut dyn Control {
         self as *mut dyn Control
     }
 }
