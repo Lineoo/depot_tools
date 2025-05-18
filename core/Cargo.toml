@@ -1,0 +1,16 @@
+[package]
+name = "depot_core"
+description = "Basis of depot."
+version.workspace = true
+edition.workspace = true
+
+[lib]
+crate-type = ["dylib"]
+
+[dependencies]
+log.workspace = true
+getrandom = "0.3.3"
+hashbrown.workspace = true
+toml = "0.8.21"
+libloading = "0.8.6"
+fuzzy-matcher = "0.3.7"
