@@ -1,15 +1,8 @@
-use lazy_static::lazy_static;
-use std::{
-    collections::HashMap,
-    option::Option,
-    sync::{Arc, Mutex, Weak},
-};
-use winit::window::WindowAttributes;
-
-use crate::{application::Application, loop_args::LoopArgs};
+use crate::{painter::Painter, wgpu_ctx::WgpuCtx};
 
 pub struct Window {
-    win: winit::window::Window,
+    pub(crate) win: winit::window::Window,
+    pub(crate) ctx: WgpuCtx,
     pub on_size: Option<fn((i32, i32))>,
     pub before_close: Option<fn() -> bool>,
     pub on_paint: Option<fn()>,
@@ -20,23 +13,17 @@ pub struct Window {
     pub on_mouse_move: Option<fn(i32, i32)>, // x, y
 }
 
-lazy_static! {
-    static ref WINDOW_MAP: Mutex<HashMap<winit::window::WindowId, Weak<Window>>> =
-        Mutex::new(HashMap::new());
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub struct WinHandle {
+    pub(crate) id: winit::window::WindowId,
 }
 
 impl Window {
-    pub fn new(args: &LoopArgs, title: String) -> Arc<Self> {
-        let w = Arc::new(Window {
-            win: args
-                .active_evt_loop
-                .create_window(
-                    WindowAttributes::default()
-                        .with_title(title)
-                        .with_visible(false),
-                )
-                .unwrap(),
-
+    pub(crate) fn from_native_win(win: winit::window::Window) -> Self {
+        let ctx = WgpuCtx::new(&win);
+        Window {
+            win,
+            ctx,
             on_size: None,
             before_close: None,
             on_paint: None,
@@ -45,28 +32,18 @@ impl Window {
             on_mouse_down: None,
             on_mouse_up: None,
             on_mouse_move: None,
-        });
-        let mut m = WINDOW_MAP.lock().unwrap();
-        (*m).insert(w.win.id(), Arc::downgrade(&w));
-        w.clone()
+        }
     }
 
-    pub fn from_id(id: winit::window::WindowId) -> Option<Arc<Self>> {
-        let m = WINDOW_MAP.lock().unwrap();
-        match (*m).get(&id) {
-            Some(w) => w.upgrade(),
-            None => None,
-        }
+    pub(crate) fn make_painter<'w>(&'w self) -> Painter<'w> {
+        todo!()
+    }
+
+    pub fn handle(&self) -> WinHandle {
+        WinHandle { id: self.win.id() }
     }
 
     pub fn show(&self, visible: bool) {
         self.win.set_visible(visible);
-    }
-}
-
-impl Drop for Window {
-    fn drop(&mut self) {
-        let mut m = WINDOW_MAP.lock().unwrap();
-        (*m).remove(&self.win.id());
     }
 }

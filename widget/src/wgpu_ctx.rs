@@ -1,31 +1,51 @@
 use std::sync::Arc;
 
-use wgpu::util::{BufferInitDescriptor, DeviceExt};
+use glam::Mat4;
+use wgpu::{
+    CommandEncoder,
+    util::{BufferInitDescriptor, DeviceExt},
+};
 use winit::{dpi::PhysicalSize, window::Window};
 
-use crate::vertex::{VERTEXT_LIST, create_vertex_buffer_layout};
+use crate::vertex::{VERTEX_LIST, create_vertex_buffer_layout};
 
 pub const DRAG_HANDLE_WIDTH: u32 = 10;
 pub const WINDOW_SIZE: [u32; 2] = [300, 20];
 
-pub struct WgpuCtx<'window> {
-    surface: wgpu::Surface<'window>,
-    surface_config: wgpu::SurfaceConfiguration,
-    _adapter: wgpu::Adapter,
-    device: wgpu::Device,
-    queue: wgpu::Queue,
-    render_pipeline: wgpu::RenderPipeline,
-    vertex_buffer: wgpu::Buffer,
+/// Drawing context for widget module
+///
+/// This struct should be re-created every frame, and dropped after the frame is done.
+/// Generally, it should live with a `Window` and be distributed to the widgets for painting.
+pub struct WgpuCtx {
+    // pub(crate) surface: wgpu::Surface<'window>,
+    pub(crate) surface_config: wgpu::SurfaceConfiguration,
+    pub(crate) surface_texture: wgpu::SurfaceTexture,
+    pub(crate) _adapter: wgpu::Adapter,
+    pub(crate) device: wgpu::Device,
+    pub(crate) queue: wgpu::Queue,
+    pub(crate) render_pipeline: wgpu::RenderPipeline,
+    pub(crate) vertex_buffer: wgpu::Buffer,
+    pub(crate) encoder: Option<CommandEncoder>,
 }
 
-impl<'window> WgpuCtx<'window> {
-    pub fn new(window: Arc<Window>) -> Self {
+#[derive(Debug, Clone, Copy)]
+pub struct Color(u32, u32, u32, u32);
+
+#[derive(Debug, Clone, Copy)]
+pub struct Triangle<T> {
+    pub vertices: [T; 3],
+    pub indices: [usize; 3],
+    pub color: Color,
+}
+
+impl WgpuCtx {
+    pub fn new(window: &Window) -> Self {
         pollster::block_on(WgpuCtx::new_async(window))
     }
 
-    pub async fn new_async(window: Arc<Window>) -> Self {
+    pub async fn new_async(window: &Window) -> Self {
         let instance = wgpu::Instance::default();
-        let surface = instance.create_surface(window.clone()).unwrap();
+        let surface = instance.create_surface(window).unwrap();
 
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
@@ -59,7 +79,7 @@ impl<'window> WgpuCtx<'window> {
 
         let render_pipeline = create_pipeline(&device, surface_config.format);
 
-        let bytes: &[u8] = bytemuck::cast_slice(&VERTEXT_LIST);
+        let bytes: &[u8] = bytemuck::cast_slice(&VERTEX_LIST);
         let vertex_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: None,
             contents: bytes,
@@ -67,55 +87,126 @@ impl<'window> WgpuCtx<'window> {
         });
 
         WgpuCtx {
-            surface,
+            // surface,
             surface_config,
+            surface_texture: surface.get_current_texture().unwrap(),
             _adapter: adapter,
             device,
             queue,
             render_pipeline,
             vertex_buffer,
+            encoder: None,
         }
     }
 
-    pub fn draw(&mut self) {
-        let surface_texture = self
-            .surface
-            .get_current_texture()
-            .expect("failed to get next surface!");
-        let texture_view = surface_texture
-            .texture
-            .create_view(&wgpu::TextureViewDescriptor::default());
-        let mut encoder = self
-            .device
-            .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
-        {
-            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: None,
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &texture_view,
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color::WHITE),
-                        store: wgpu::StoreOp::Store,
-                    },
-                })],
-                depth_stencil_attachment: None,
-                timestamp_writes: None,
-                occlusion_query_set: None,
-            });
-            render_pass.set_pipeline(&self.render_pipeline);
-            render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-            render_pass.draw(0..VERTEXT_LIST.len() as u32, 0..1);
-        }
-        self.queue.submit(Some(encoder.finish()));
-        surface_texture.present();
+    pub(crate) fn to_texture(&mut self) -> wgpu::Texture {
+        self.surface_texture.texture.clone()
     }
 
-    pub fn resize(&mut self, size: PhysicalSize<u32>) {
-        self.surface_config.width = size.width.max(1);
-        self.surface_config.height = size.height.max(1);
-        self.surface.configure(&self.device, &self.surface_config);
+    pub(crate) fn clear(&mut self) {
+        todo!()
     }
+
+    // #[deprecated]
+    // pub fn draw(&mut self) {
+    //     let surface_texture = self
+    //         .surface
+    //         .get_current_texture()
+    //         .expect("failed to get next surface!");
+    //     let texture_view = surface_texture
+    //         .texture
+    //         .create_view(&wgpu::TextureViewDescriptor::default());
+    //     let mut encoder = self
+    //         .device
+    //         .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+
+    //     let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+    //         label: None,
+    //         color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+    //             view: &texture_view,
+    //             resolve_target: None,
+    //             ops: wgpu::Operations {
+    //                 load: wgpu::LoadOp::Clear(wgpu::Color::WHITE),
+    //                 store: wgpu::StoreOp::Store,
+    //             },
+    //         })],
+    //         depth_stencil_attachment: None,
+    //         timestamp_writes: None,
+    //         occlusion_query_set: None,
+    //     });
+    //     render_pass.set_pipeline(&self.render_pipeline);
+    //     render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+    //     render_pass.draw(0..VERTEX_LIST.len() as u32, 0..1);
+    //     drop(render_pass);
+
+    //     self.queue.submit(Some(encoder.finish()));
+    //     surface_texture.present();
+    // }
+
+    // pub fn resize(&mut self, size: PhysicalSize<u32>) {
+    //     self.surface_config.width = size.width.max(1);
+    //     self.surface_config.height = size.height.max(1);
+    //     self.surface.configure(&self.device, &self.surface_config);
+    // }
+
+    // pub fn begin(&mut self) {
+    //     // FIXME: ai gen
+    //     let surface_texture = self
+    //         .surface
+    //         .get_current_texture()
+    //         .expect("failed to get next surface!");
+    //     let texture_view = surface_texture
+    //         .texture
+    //         .create_view(&wgpu::TextureViewDescriptor::default());
+    //     let mut encoder = self
+    //         .device
+    //         .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+
+    //     let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+    //         label: None,
+    //         color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+    //             view: &texture_view,
+    //             resolve_target: None,
+    //             ops: wgpu::Operations {
+    //                 load: wgpu::LoadOp::Clear(wgpu::Color::WHITE),
+    //                 store: wgpu::StoreOp::Store,
+    //             },
+    //         })],
+    //         depth_stencil_attachment: None,
+    //         timestamp_writes: None,
+    //         occlusion_query_set: None,
+    //     });
+    //     render_pass.set_pipeline(&self.render_pipeline);
+    //     render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+    //     render_pass.draw(0..VERTEX_LIST.len() as u32, 0..1);
+    //     drop(render_pass);
+
+    //     self.encoder = Some(encoder);
+    //     // TODO: complete
+    //     // self.queue.submit(Some(encoder.finish()));
+    // }
+
+    // pub fn end(&mut self) {
+    //     let Some(encoder) = self.encoder.take() else {
+    //         return;
+    //     };
+    //     self.queue.submit(Some(encoder.finish()));
+    //     todo!() // finish end()
+    // }
+
+    /*     pub fn triangle_f32(&mut self, triangle: Triangle<f32>) {
+        // FIXME: ai gen
+        let bytes: &[u8] = bytemuck::cast_slice(&VERTEX_LIST);
+        self.vertex_buffer = self.device.create_buffer_init(&BufferInitDescriptor {
+            label: None,
+            contents: bytes,
+            usage: wgpu::BufferUsages::VERTEX,
+        });
+    }
+
+    pub fn triangle_u32(&mut self, triangle: Triangle<u32>) {
+        todo!()
+    } */
 }
 
 fn create_pipeline(
@@ -152,4 +243,13 @@ fn create_pipeline(
         multiview: None,
         cache: None,
     })
+}
+
+/// Generate a proper matrix for window at given size
+fn make_mat(w: u32, h: u32) -> Mat4 {
+    /* let scale = glam::Mat4::from_scale(glam::Vec3::new(w as f32, h as f32, 1.0));
+    let translate = glam::Mat4::from_translation(glam::Vec3::new(0.0, 0.0, 0.0));
+    let rotate = glam::Mat4::from_rotation_z(0.0);
+    scale * rotate * translate */
+    Mat4::orthographic_lh(0.0f32, w as f32, 0.0f32, h as f32, 0.0f32, 100.0f32)
 }
