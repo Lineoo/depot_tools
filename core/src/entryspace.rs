@@ -143,7 +143,7 @@ impl EntrySpace {
                             // Safety: No. No safety at all. That depends on users.
                             unsafe {
                                 let lib = Library::new(&path)?;
-                                let func = lib.get::<unsafe fn() -> BoxedEntry>(b"entry")?;
+                                let func = lib.get::<unsafe fn() -> BoxedEntry>(b"entry\0")?;
                                 Ok(func())
                             }
                         };
