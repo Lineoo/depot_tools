@@ -3,7 +3,7 @@ use std::{process::Command, str::FromStr, sync::Arc};
 use hashbrown::HashMap;
 use log::*;
 
-use crate::{entry::*, search::SearchEngine};
+use crate::{dylib::DylibEntry, entry::*, search::SearchEngine};
 
 type Ident = u64;
 
@@ -143,14 +143,15 @@ impl EntrySpace {
                             // Safety: No. No safety at all. That depends on users.
                             unsafe {
                                 let lib = Library::new(&path)?;
-                                let func = lib.get::<unsafe fn() -> BoxedEntry>(b"entry\0")?;
-                                Ok(func())
+                                let init = lib.get::<unsafe extern "C" fn()>(b"init")?;
+                                init();
+                                Ok(Box::new(DylibEntry { lib }))
                             }
                         };
                         // error handing
                         let action = move || match action() {
                             Ok(entry) => entry,
-                            Err(e) => Box::new(e.to_string())
+                            Err(e) => Box::new(e.to_string()),
                         };
                         let action = Arc::new(action);
                         raise = action.clone();

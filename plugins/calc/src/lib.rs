@@ -1,5 +1,13 @@
+use std::{
+    ffi::{CString, c_char},
+    ptr::{null, null_mut},
+};
+
 use calculator_rs::Calculate;
-use depot_core::entry::{ActiveEntry, EntryArgs, Invoke, Read};
+use depot_core::{
+    dylib::CRead,
+    entry::{ActiveEntry, EntryArgs, Invoke, Read},
+};
 
 struct Calculator(String);
 
@@ -35,7 +43,42 @@ impl ActiveEntry for Calculator {
     }
 }
 
+static mut EXT: Option<Calculator> = None;
+
 #[unsafe(no_mangle)]
-fn entry() -> Box<dyn ActiveEntry> {
-    Box::new(Calculator(String::new()))
+extern "C" fn init() {
+    unsafe { EXT = Some(Calculator(String::new())) };
+}
+
+#[unsafe(no_mangle)]
+extern "C" fn push(args: *mut c_char) {
+    #[expect(static_mut_refs)]
+    if let Some(ext) = unsafe { EXT.as_mut() } {
+        ext.push(unsafe { CString::from_raw(args).into_string().unwrap() });
+    }
+}
+
+#[unsafe(no_mangle)]
+extern "C" fn read(index: usize) -> CRead {
+    #[expect(static_mut_refs)]
+    if let Some(ext) = unsafe { EXT.as_mut() } {
+        if let Some(read) = ext.read(index) {
+            return CRead {
+                title: CString::new(read.title).unwrap().into_raw(),
+                description: CString::new(read.description).unwrap().into_raw(),
+            };
+        }
+    }
+    CRead {
+        title: null_mut(),
+        description: null_mut(),
+    }
+}
+
+#[unsafe(no_mangle)]
+extern "C" fn call(index: usize) {
+    #[expect(static_mut_refs)]
+    if let Some(ext) = unsafe { EXT.as_mut() } {
+        ext.call(index);
+    }
 }

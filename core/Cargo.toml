@@ -4,9 +4,6 @@ description = "Basis of depot."
 version.workspace = true
 edition.workspace = true
 
-[lib]
-crate-type = ["dylib"]
-
 [dependencies]
 log.workspace = true
 getrandom = "0.3.3"
