@@ -12,6 +12,8 @@
 pub mod app_context;
 pub mod application;
 pub mod button;
+pub mod canvas;
+pub mod cvs_buffer;
 pub mod control;
 mod ctx_view;
 mod init;
@@ -19,7 +21,6 @@ mod painter;
 mod vertex;
 mod wgpu_ctx;
 pub mod window;
-
 // fn main() -> Result<(), EventLoopError> {
 //     env_logger::init();
 //     let event_loop = EventLoop::new().unwrap();

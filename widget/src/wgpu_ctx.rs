@@ -16,7 +16,7 @@ pub const WINDOW_SIZE: [u32; 2] = [300, 20];
 ///
 /// This struct should be re-created every frame, and dropped after the frame is done.
 /// Generally, it should live with a `Window` and be distributed to the widgets for painting.
-pub struct WgpuCtx {
+pub(crate) struct WgpuCtx {
     // pub(crate) surface: wgpu::Surface<'window>,
     pub(crate) surface_config: wgpu::SurfaceConfiguration,
     pub(crate) surface_texture: wgpu::SurfaceTexture,
