@@ -12,3 +12,6 @@ target/
 # VSCode
 .vscode/
 *.code-workspace
+
+# RustRover
+.idea/
