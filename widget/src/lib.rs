@@ -12,12 +12,13 @@
 pub mod app_context;
 pub mod application;
 pub mod button;
-pub mod canvas;
-pub mod cvs_buffer;
 pub mod control;
 mod ctx_view;
+pub mod cvs_buffer;
 mod init;
 mod painter;
+pub mod size;
+pub mod texture;
 mod vertex;
 mod wgpu_ctx;
 pub mod window;
