@@ -1,8 +1,8 @@
-use crate::{painter::Painter, wgpu_ctx::WgpuCtx};
+use crate::{paint::Painter, wgpu_ctx::WgpuCtx};
 
-pub struct Window {
+pub struct Window<'w> {
     pub(crate) win: winit::window::Window,
-    pub(crate) ctx: WgpuCtx,
+    pub(crate) ctx: WgpuCtx<'w>,
     pub on_size: Option<fn((i32, i32))>,
     pub before_close: Option<fn() -> bool>,
     pub on_paint: Option<fn()>,

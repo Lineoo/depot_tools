@@ -1,13 +1,10 @@
-use std::sync::Arc;
-
+use crate::paint::Texture;
+use crate::size::LogicalSize;
+use crate::vertex::{create_vertex_buffer_layout, VERTEX_LIST};
 use glam::Mat4;
-use wgpu::{
-    CommandEncoder,
-    util::{BufferInitDescriptor, DeviceExt},
-};
-use winit::{dpi::PhysicalSize, window::Window};
-
-use crate::vertex::{VERTEX_LIST, create_vertex_buffer_layout};
+use wgpu::Trace;
+use wgpu::{util::{BufferInitDescriptor, DeviceExt}, CommandEncoder, Surface, TextureDescriptor};
+use winit::window::Window;
 
 pub const DRAG_HANDLE_WIDTH: u32 = 10;
 pub const WINDOW_SIZE: [u32; 2] = [300, 20];
@@ -26,6 +23,7 @@ pub struct WgpuCtx {
     pub(crate) render_pipeline: wgpu::RenderPipeline,
     pub(crate) vertex_buffer: wgpu::Buffer,
     pub(crate) encoder: Option<CommandEncoder>,
+    pub(crate) surface: Option<Surface>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -64,8 +62,8 @@ impl WgpuCtx {
                     required_limits: wgpu::Limits::downlevel_webgl2_defaults()
                         .using_resolution(adapter.limits()),
                     memory_hints: wgpu::MemoryHints::default(),
-                },
-                None,
+                    trace: Trace::default(),
+                }
             )
             .await
             .expect("failed to create device!");
@@ -96,11 +94,29 @@ impl WgpuCtx {
             render_pipeline,
             vertex_buffer,
             encoder: None,
+            surface: Some(surface),
         }
     }
 
-    pub(crate) fn to_texture(&mut self) -> wgpu::Texture {
-        self.surface_texture.texture.clone()
+    pub(crate) fn to_texture(&mut self) -> Texture {
+        Texture::from_texture(self.surface_texture.texture.clone())
+    }
+
+    pub fn make_texture(&mut self, size: LogicalSize) -> Texture {
+        Texture::from_texture(self.device.create_texture(&TextureDescriptor {
+            label: None,
+            size: wgpu::Extent3d {
+                width: size.width.max(1),
+                height: size.height.max(1),
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: self.surface_config.format,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            view_formats: &[],
+        }))
     }
 
     pub(crate) fn clear(&mut self) {
