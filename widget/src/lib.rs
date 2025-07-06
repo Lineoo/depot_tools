@@ -15,13 +15,13 @@ pub mod button;
 pub mod control;
 pub mod control_ref;
 mod ctx_view;
+pub mod cvs_buffer;
 mod init;
 pub mod paint;
 pub mod size;
 mod vertex;
 mod wgpu_ctx;
 pub mod window;
-
 // fn main() -> Result<(), EventLoopError> {
 //     env_logger::init();
 //     let event_loop = EventLoop::new().unwrap();
