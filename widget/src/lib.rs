@@ -13,6 +13,7 @@ pub mod app_context;
 pub mod application;
 pub mod button;
 pub mod control;
+pub mod control_ref;
 mod ctx_view;
 mod init;
 pub mod paint;

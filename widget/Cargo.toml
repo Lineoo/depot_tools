@@ -15,4 +15,7 @@ wgpu = "25.0.2"
 
 [lib]
 name = "widget"
-crate-type = ["dylib"]
+# crate-type = ["dylib"]
+
+[features]
+sync_ref = []

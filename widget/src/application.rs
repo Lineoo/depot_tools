@@ -25,7 +25,9 @@ impl Application {
     }
 
     pub fn enter_event_loop(mut self) {
-        let result = EventLoop::new().unwrap().run_app(&mut self);
+        let result = EventLoop::new().unwrap();
+        let result = result.run_app(&mut self);
+        println!("here2");
         if let Err(err) = result {
             match err {
                 NotSupported(_) => {}

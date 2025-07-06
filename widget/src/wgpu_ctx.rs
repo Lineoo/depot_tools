@@ -1,9 +1,12 @@
 use crate::paint::Texture;
 use crate::size::LogicalSize;
-use crate::vertex::{create_vertex_buffer_layout, VERTEX_LIST};
+use crate::vertex::{VERTEX_LIST, create_vertex_buffer_layout};
 use glam::Mat4;
 use wgpu::Trace;
-use wgpu::{util::{BufferInitDescriptor, DeviceExt}, CommandEncoder, Surface, TextureDescriptor};
+use wgpu::{
+    CommandEncoder, Surface, TextureDescriptor,
+    util::{BufferInitDescriptor, DeviceExt},
+};
 use winit::window::Window;
 
 pub const DRAG_HANDLE_WIDTH: u32 = 10;
@@ -13,7 +16,7 @@ pub const WINDOW_SIZE: [u32; 2] = [300, 20];
 ///
 /// This struct should be re-created every frame, and dropped after the frame is done.
 /// Generally, it should live with a `Window` and be distributed to the widgets for painting.
-pub struct WgpuCtx {
+pub struct WgpuCtx /* <'c> */ {
     // pub(crate) surface: wgpu::Surface<'window>,
     pub(crate) surface_config: wgpu::SurfaceConfiguration,
     pub(crate) surface_texture: wgpu::SurfaceTexture,
@@ -23,7 +26,7 @@ pub struct WgpuCtx {
     pub(crate) render_pipeline: wgpu::RenderPipeline,
     pub(crate) vertex_buffer: wgpu::Buffer,
     pub(crate) encoder: Option<CommandEncoder>,
-    pub(crate) surface: Option<Surface>,
+    // pub(crate) surface: Option<Surface<'c>>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -55,16 +58,14 @@ impl WgpuCtx {
             .expect("failed to find an adapter!");
 
         let (device, queue) = adapter
-            .request_device(
-                &wgpu::DeviceDescriptor {
-                    label: None,
-                    required_features: wgpu::Features::empty(),
-                    required_limits: wgpu::Limits::downlevel_webgl2_defaults()
-                        .using_resolution(adapter.limits()),
-                    memory_hints: wgpu::MemoryHints::default(),
-                    trace: Trace::default(),
-                }
-            )
+            .request_device(&wgpu::DeviceDescriptor {
+                label: None,
+                required_features: wgpu::Features::empty(),
+                required_limits: wgpu::Limits::downlevel_webgl2_defaults()
+                    .using_resolution(adapter.limits()),
+                memory_hints: wgpu::MemoryHints::default(),
+                trace: Trace::default(),
+            })
             .await
             .expect("failed to create device!");
 
@@ -94,7 +95,7 @@ impl WgpuCtx {
             render_pipeline,
             vertex_buffer,
             encoder: None,
-            surface: Some(surface),
+            // surface: Some(surface),
         }
     }
 
