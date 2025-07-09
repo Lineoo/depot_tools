@@ -5,17 +5,20 @@ use crate::{
     window::{WinHandle, Window},
 };
 use winit::{
-    application::ApplicationHandler, error::EventLoopError::*, event::WindowEvent,
-    event_loop::EventLoop,
+    application::ApplicationHandler,
+    error::EventLoopError::*,
+    event::WindowEvent,
+    event_loop::{ActiveEventLoop, EventLoop},
 };
 
-pub struct Application {
-    on_startup: Option<Box<dyn FnOnce(AppContext)>>,
+#[derive(Default)]
+pub struct Application<'a> {
+    on_startup: Option<Box<dyn FnOnce(AppContext<'_, '_>)>>,
     started: bool,
-    win_map: HashMap<winit::window::WindowId, Window>,
+    win_map: HashMap<winit::window::WindowId, Window<'a>>,
 }
 
-impl Application {
+impl<'a> Application<'a> {
     pub fn new() -> Self {
         Application {
             on_startup: None,
@@ -44,7 +47,7 @@ impl Application {
         self.on_startup = Some(Box::new(f));
     }
 
-    pub fn reg_win(&mut self, w: Window) {
+    pub fn reg_win(&mut self, w: Window<'a>) {
         self.win_map.insert(w.win.id(), w);
     }
 
@@ -52,7 +55,7 @@ impl Application {
         self.win_map.get(&handle.id)
     }
 
-    pub fn get_win_mut(&mut self, handle: WinHandle) -> Option<&mut Window> {
+    pub fn get_win_mut(&mut self, handle: WinHandle) -> Option<&mut Window<'a>> {
         self.win_map.get_mut(&handle.id)
     }
 
@@ -61,14 +64,8 @@ impl Application {
     }
 }
 
-impl Default for Application {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl ApplicationHandler for Application {
-    fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
+impl<'a> ApplicationHandler for Application<'a> {
+    fn resumed(&mut self, event_loop: &ActiveEventLoop) {
         if self.started {
             return;
         }

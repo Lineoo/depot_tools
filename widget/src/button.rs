@@ -2,21 +2,21 @@ use std::rc::{Rc, Weak};
 
 use crate::{control::*, window::Window};
 
-pub struct Button {
+pub struct Button<'w> {
     label: String,
     width: u32,
     height: u32,
-    parent: Weak<dyn Control>,
-    ancestor: *const Window,
+    parent: Weak<dyn Control<'w>>,
+    ancestor: *const Window<'w>,
 }
 
-impl Button {
-    pub fn new(label: &str, width: u32, height: u32) -> Rc<Self> {
+impl<'w> Button<'w> {
+    pub fn new(parent: Weak<dyn Control<'w>>, label: &str, width: u32, height: u32) -> Rc<Self> {
         Rc::new(Button {
             label: label.to_string(),
             width,
             height,
-            parent: Weak::<Self>::new(),
+            parent,
             ancestor: std::ptr::null(),
         })
     }
@@ -26,16 +26,16 @@ impl Button {
     }
 }
 
-impl Control for Button {
-    fn set_parent(&mut self, parent: Weak<dyn Control>) {
+impl<'w> Control<'w> for Button<'w> {
+    fn set_parent(&mut self, parent: Weak<dyn Control<'w>>) {
         self.parent = parent;
     }
 
-    fn get_parent(&self) -> Weak<dyn Control> {
+    fn get_parent(&self) -> Weak<dyn Control<'w>> {
         self.parent.clone()
     }
 
-    fn get_parent_mut(&mut self) -> Weak<dyn Control> {
+    fn get_parent_mut(&mut self) -> Weak<dyn Control<'w>> {
         self.parent.clone()
     }
 
@@ -56,11 +56,11 @@ impl Control for Button {
         // window.add_control(self as *const dyn Control as *mut dyn Control);
     }
 
-    fn address(&self) -> *const dyn Control {
-        self as *const dyn Control
+    /* fn address(&self) -> *const dyn Control<'w> {
+        self as *const dyn Control<'w>
     }
 
-    fn address_mut(&mut self) -> *mut dyn Control {
-        self as *mut dyn Control
-    }
+    fn address_mut(&mut self) -> *mut dyn Control<'w> {
+        self as *mut dyn Control<'w>
+    } */
 }

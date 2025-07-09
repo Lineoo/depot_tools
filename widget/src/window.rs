@@ -1,8 +1,10 @@
+use std::sync::Arc;
+
 use crate::{paint::Painter, wgpu_ctx::WgpuCtx};
 
-pub struct Window /* <'w> */ {
-    pub(crate) win: winit::window::Window,
-    pub(crate) ctx: WgpuCtx, /* <'w> */
+pub struct Window<'w> {
+    pub(crate) win: Arc<winit::window::Window>,
+    pub(crate) ctx: WgpuCtx<'w>,
     pub on_size: Option<fn((i32, i32))>,
     pub before_close: Option<fn() -> bool>,
     pub on_paint: Option<fn()>,
@@ -18,9 +20,10 @@ pub struct WinHandle {
     pub(crate) id: winit::window::WindowId,
 }
 
-impl Window {
+impl<'w> Window<'w> {
     pub(crate) fn from_native_win(win: winit::window::Window) -> Self {
-        let ctx = WgpuCtx::new(&win);
+        let win = Arc::new(win);
+        let ctx = WgpuCtx::new(Arc::clone(&win));
         Window {
             win,
             ctx,
@@ -35,7 +38,11 @@ impl Window {
         }
     }
 
-    pub(crate) fn make_painter<'w>(&'w self) -> Painter<'w> {
+    fn init_ctx(&mut self) {
+        // self.ctx = WgpuCtx::new(&self.win);
+    }
+
+    pub(crate) fn make_painter(&self) -> Painter<'w> {
         todo!()
     }
 

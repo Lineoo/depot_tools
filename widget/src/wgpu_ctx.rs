@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::paint::Texture;
 use crate::size::LogicalSize;
 use crate::vertex::{VERTEX_LIST, create_vertex_buffer_layout};
@@ -16,7 +18,7 @@ pub const WINDOW_SIZE: [u32; 2] = [300, 20];
 ///
 /// This struct should be re-created every frame, and dropped after the frame is done.
 /// Generally, it should live with a `Window` and be distributed to the widgets for painting.
-pub struct WgpuCtx /* <'c> */ {
+pub struct WgpuCtx<'w> {
     // pub(crate) surface: wgpu::Surface<'window>,
     pub(crate) surface_config: wgpu::SurfaceConfiguration,
     pub(crate) surface_texture: wgpu::SurfaceTexture,
@@ -26,6 +28,7 @@ pub struct WgpuCtx /* <'c> */ {
     pub(crate) render_pipeline: wgpu::RenderPipeline,
     pub(crate) vertex_buffer: wgpu::Buffer,
     pub(crate) encoder: Option<CommandEncoder>,
+    surface: Surface<'w>,
     // pub(crate) surface: Option<Surface<'c>>,
 }
 
@@ -39,14 +42,14 @@ pub struct Triangle<T> {
     pub color: Color,
 }
 
-impl WgpuCtx {
-    pub fn new(window: &Window) -> Self {
+impl<'w> WgpuCtx<'w> {
+    pub fn new(window: Arc<Window>) -> Self {
         pollster::block_on(WgpuCtx::new_async(window))
     }
 
-    pub async fn new_async(window: &Window) -> Self {
+    pub async fn new_async(window: Arc<Window>) -> Self {
         let instance = wgpu::Instance::default();
-        let surface = instance.create_surface(window).unwrap();
+        let surface = instance.create_surface(Arc::clone(&window)).unwrap();
 
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
@@ -95,7 +98,7 @@ impl WgpuCtx {
             render_pipeline,
             vertex_buffer,
             encoder: None,
-            // surface: Some(surface),
+            surface: surface,
         }
     }
 

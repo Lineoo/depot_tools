@@ -2,15 +2,15 @@ use winit::window::WindowAttributes;
 
 use crate::{application::Application, window::Window};
 
-pub struct AppContext<'a> {
-    pub(crate) active_evt_loop: &'a winit::event_loop::ActiveEventLoop,
-    pub app: &'a mut Application,
+pub struct AppContext<'a, 'e> {
+    pub(crate) active_evt_loop: &'e winit::event_loop::ActiveEventLoop,
+    pub app: &'a mut Application<'a>,
 }
 
-impl<'a> AppContext<'a> {
+impl<'a, 'e> AppContext<'a, 'e> {
     pub(crate) fn new(
-        active_evt_loop: &'a winit::event_loop::ActiveEventLoop,
-        app: &'a mut Application,
+        active_evt_loop: &'e winit::event_loop::ActiveEventLoop,
+        app: &'a mut Application<'a>,
     ) -> Self {
         AppContext {
             active_evt_loop,

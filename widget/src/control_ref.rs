@@ -1,7 +1,7 @@
 use crate::control::Control;
 
 #[cfg(feature = "sync_ref")]
-type ControlRef<T: Control> =  std::sync::Weak<T>;
+type ControlRef<'w, T: Control<'w>> = std::sync::Weak<T>;
 
 #[cfg(not(feature = "sync_ref"))]
-type ControlRef<T: Control> =  std::rc::Weak<T>;
+type ControlRef<'w, T: Control<'w>> = std::rc::Weak<T>;

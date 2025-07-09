@@ -12,6 +12,7 @@ pub struct Painter<'x> {
     texture: &'x Texture,
     view: TextureView,
     encoder: Option<CommandEncoder>,
+    render_pass: Option<wgpu::RenderPass<'x>>,
 }
 
 impl<'x> Painter<'x> {
@@ -20,6 +21,7 @@ impl<'x> Painter<'x> {
             texture,
             view: texture.create_view(&wgpu::TextureViewDescriptor::default()),
             encoder: None,
+            render_pass: None,
         }
     }
 }
