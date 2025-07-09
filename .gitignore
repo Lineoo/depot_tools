@@ -17,3 +17,5 @@ target/
 
 # RustRover
 .idea/
+
+*.o
