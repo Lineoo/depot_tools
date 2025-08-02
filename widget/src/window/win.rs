@@ -70,12 +70,12 @@ impl WindowDirector {
         &mut self.win
     }
 
-    pub fn set_strategy(
+    pub fn set_strategy<F: FnMut(&mut Window) -> WindowStrategy + 'static>(
         &mut self,
         name: String,
-        strategy: Box<dyn FnMut(&mut Window) -> WindowStrategy>,
+        strategy: F,
     ) {
-        self.strategy.insert(name, strategy);
+        self.strategy.insert(name, Box::new(strategy));
     }
 
     pub(crate) fn call_strategy(

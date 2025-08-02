@@ -9,21 +9,15 @@ fn main() {
 
     let mut w = app.make_window("Test", 800, 600);
 
-    w.set_strategy(
-        "close_requested".to_string(),
-        Box::new(|win| {
-            win.hide();
-            WindowStrategy::Close(CloseStrategy::Ignore)
-        }),
-    );
+    w.set_strategy("close_requested".to_string(), |win| {
+        win.hide();
+        WindowStrategy::Close(CloseStrategy::Ignore)
+    });
 
-    w.set_strategy(
-        "hotkey".to_string(),
-        Box::new(|win| {
-            win.show();
-            WindowStrategy::Hotkey(GlobalHotKeyStrategy::StopSpread)
-        }),
-    );
+    w.set_strategy("hotkey".to_string(), |win| {
+        win.show();
+        WindowStrategy::Hotkey(GlobalHotKeyStrategy::StopSpread)
+    });
 
     let _ = w
         .get_win_mut()
