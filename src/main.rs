@@ -1,18 +1,34 @@
-use log::info;
-use widget::application::Application;
+use widget::{
+    application::Application,
+    global_hotkey::hotkey::{Code, HotKey, Modifiers},
+    window::win_strategy::{CloseStrategy, GlobalHotKeyStrategy, WindowStrategy},
+};
 
 fn main() {
-    // static mut W: Option<Arc<Window>> = None;
-    env_logger::init();
+    let mut app = Application::default();
 
-    let mut app = Application::new();
-    app.on_init(|ctx| {
-        let w = ctx.create_window("Hello".to_string());
-        w.show(true);
-        ctx.app.reg_win(w);
-    });
-    app.enter_event_loop();
+    let mut w = app.make_window("Test", 800, 600);
 
-    println!("depot main");
-    info!("hi there");
+    w.set_strategy(
+        "close_requested".to_string(),
+        Box::new(|win| {
+            win.hide();
+            WindowStrategy::Close(CloseStrategy::Ignore)
+        }),
+    );
+
+    w.set_strategy(
+        "hotkey".to_string(),
+        Box::new(|win| {
+            win.show();
+            WindowStrategy::Hotkey(GlobalHotKeyStrategy::StopSpread)
+        }),
+    );
+
+    let _ = w
+        .get_win_mut()
+        .reg_hotkey(HotKey::new(Some(Modifiers::CONTROL), Code::Space));
+
+    app.reg_win(w);
+    app.run();
 }

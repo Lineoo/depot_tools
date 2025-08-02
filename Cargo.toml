@@ -16,7 +16,7 @@ uuid.version = "1.16.0"
 uuid.features = ["v4"]
 pollster = "0.4.0"
 serde = "1.0"
-winit = "0.30.7"
+thiserror = "2.0.12"
 
 ## Main package
 

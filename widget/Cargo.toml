@@ -4,18 +4,12 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
-bytemuck.workspace = true
-env_logger.workspace = true
-lazy_static.workspace = true
 log.workspace = true
-pollster.workspace = true
-winit.workspace = true
-glam = "0.30.4"
-wgpu = "25.0.2"
+thiserror.workspace = true
+bytemuck = "1.23.1"
+global-hotkey = "0.7.0"
+pollster = "0.4.0"
+sdl3 = "0.14.36"
 
 [lib]
 name = "widget"
-# crate-type = ["dylib"]
-
-[features]
-sync_ref = []
