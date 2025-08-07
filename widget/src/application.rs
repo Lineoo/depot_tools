@@ -6,28 +6,39 @@
 //! Every application should have a single instance of `Application`,
 //! but more instances are not prohibited.
 
-use std::{cell::RefCell, collections::HashMap, rc::Rc, time::Duration};
-
-use global_hotkey::{
-    GlobalHotKeyEvent, GlobalHotKeyManager,
-    hotkey::{Code, HotKey, Modifiers},
+use crate::id_manager::IdManager;
+use crate::window::WindowStrategyError;
+use crate::window::{
+    Window, WindowDirector,
+    win_strategy::{CloseStrategy, MinimizeStrategy, WindowStrategy},
 };
+use cosmic_text::{FontSystem, SwashCache};
+use global_hotkey::{GlobalHotKeyEvent, GlobalHotKeyManager};
 use sdl3::{
     Sdl, VideoSubsystem,
     event::{Event, WindowEvent},
     keyboard::Keycode,
 };
+use std::{cell::RefCell, collections::HashMap, rc::Rc, time::Duration};
 
-use crate::window::{
-    Window, WindowDirector,
-    win_strategy::{CloseStrategy, WindowStrategy},
-};
+pub type IdType = u64;
 
 pub struct Application {
+    // SDL context and video subsystem
     sdl_context: Sdl,
     video_subsystem: VideoSubsystem,
+
+    // HashMap to store windows by their IDs
     wins: HashMap<u32, WindowDirector>,
-    hotkey_manager: Rc<RefCell<(GlobalHotKeyManager, HashMap<u32, u32>)>>,
+
+    // Font system for text rendering
+    text_mgr: Rc<RefCell<TextMgr>>,
+
+    // Global hotkey manager and a map to associate hotkeys with window IDs
+    hotkey_mgr: Rc<RefCell<(GlobalHotKeyManager, HashMap<u32, u32>)>>,
+
+    // ID manager for generating unique IDs for controls
+    id_mgr: IdManager,
 }
 
 impl Application {
@@ -40,38 +51,46 @@ impl Application {
             sdl_context,
             video_subsystem,
             wins: HashMap::new(),
-            hotkey_manager: Rc::new(RefCell::new((
+            text_mgr: Rc::new(RefCell::new(TextMgr {
+                font_system: FontSystem::new(),
+                swash_cache: SwashCache::new(),
+            })),
+            hotkey_mgr: Rc::new(RefCell::new((
                 GlobalHotKeyManager::new().expect("Failed to create hotkey manager"),
                 HashMap::new(),
             ))),
+            id_mgr: IdManager::new(),
         }
     }
 
-    pub fn make_window(&self, title: &str, width: u32, height: u32) -> WindowDirector {
+    pub fn make_window(&mut self, title: &str, width: u32, height: u32) -> WindowDirector {
         WindowDirector::new(
             Window::new(
                 self.video_subsystem
                     .window(title, width, height)
                     .build()
                     .expect("Failed to create window"),
-                self.hotkey_manager.clone(),
+                self.hotkey_mgr.clone(),
+                self.apply_control_id(),
+                self.text_mgr.clone(),
             ),
             HashMap::new(),
         )
     }
 
     pub fn reg_win(&mut self, win: WindowDirector) {
-        // Register the window in the application context if needed
-        // This could involve storing it in a collection or similar
         self.wins.insert(win.get_win().get_id(), win);
     }
 
-    pub fn run(&mut self) {
-        // let hotkey = HotKey::new(Some(Modifiers::CONTROL), Code::Space);
-        // let r = manager.register(hotkey);
-        // r.expect("Failed to register global hotkey");
+    pub fn apply_control_id(&mut self) -> IdType {
+        self.id_mgr.get_id()
+    }
 
-        // Application logic goes here
+    pub fn drop_control_id(&mut self, id: IdType) {
+        self.id_mgr.release_id(id)
+    }
+
+    pub fn run(&mut self) {
         let mut event_pump = self.sdl_context.event_pump().unwrap();
         'event_loop: loop {
             for win in self.wins.values_mut() {
@@ -89,32 +108,52 @@ impl Application {
                         win_event: WindowEvent::CloseRequested,
                         ..
                     } => {
-                        println!("close called");
                         let win = self.wins.get_mut(&window_id).unwrap();
-                        if let Ok(WindowStrategy::Close(CloseStrategy::Close)) =
+                        if let Ok(WindowStrategy::Close(CloseStrategy::Close))
+                        | Err(WindowStrategyError::StrategyNotSet(..)) =
                             win.call_strategy("close_requested")
                         {
                             self.wins.remove(&window_id);
-                            println!("Window {} closed", window_id);
+                        }
+                        {}
+                    }
+                    Event::Window {
+                        window_id,
+                        win_event: WindowEvent::Minimized,
+                        ..
+                    } => {
+                        let win = self.wins.get_mut(&window_id).unwrap();
+                        if let Ok(WindowStrategy::Minimize(MinimizeStrategy::Minimize)) =
+                            win.call_strategy("minimize")
+                        {
+                            self.wins
+                                .get_mut(&window_id)
+                                .unwrap()
+                                .get_win_mut()
+                                .minimize();
                         }
                     }
                     Event::KeyDown {
                         keycode: Some(Keycode::Q),
                         ..
                     } => break 'event_loop,
+                    Event::KeyDown {
+                        keycode: Some(Keycode::W),
+                        window_id,
+                        ..
+                    } => {
+                        self.wins.remove(&window_id);
+                    }
                     _ => {}
                 }
             }
 
             if let Ok(event) = GlobalHotKeyEvent::receiver().try_recv() {
-                let hm = self.hotkey_manager.borrow_mut();
+                let hm = self.hotkey_mgr.borrow_mut();
                 let win = self.wins.get_mut(hm.1.get(&event.id).unwrap()).unwrap();
-                let _ = win.call_strategy("hotkey");
+                let _ = win.call_slot("hotkey", event.id);
             }
 
-            // if let Ok(event) = GlobalHotKeyEvent::receiver().try_recv() {
-            //     self.wins[0].cvs.window_mut().show();
-            // }
             std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 60));
         }
     }
@@ -124,4 +163,9 @@ impl Default for Application {
     fn default() -> Self {
         Self::new()
     }
+}
+
+pub(crate) struct TextMgr {
+    pub(crate) font_system: FontSystem,
+    pub(crate) swash_cache: SwashCache,
 }
