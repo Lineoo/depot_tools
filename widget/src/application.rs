@@ -144,6 +144,15 @@ impl Application {
                     } => {
                         self.wins.remove(&window_id);
                     }
+                    Event::KeyDown {
+                        window_id, keycode, ..
+                    } => {
+                        self.wins
+                            .get_mut(&window_id)
+                            .unwrap()
+                            .call_slot("keydown", keycode)
+                            .unwrap();
+                    }
                     _ => {}
                 }
             }

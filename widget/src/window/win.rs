@@ -17,6 +17,7 @@ pub struct Window {
     hotkey_manager: Rc<RefCell<(GlobalHotKeyManager, HashMap<u32, u32>)>>,
     hotkeys: HashSet<HotKey>,
     id: IdType,
+    userdata: Option<Box<dyn Any>>,
 }
 
 impl Window {
@@ -36,6 +37,7 @@ impl Window {
             hotkey_manager,
             hotkeys: HashSet::new(),
             id,
+            userdata: None,
         }
     }
 
@@ -47,6 +49,11 @@ impl Window {
         self.cvs
             .set_draw_color(sdl3::pixels::Color::RGB(255, 252, 241));
         self.cvs.clear();
+
+        self.cvs.set_draw_color(sdl3::pixels::Color::RGB(0, 0, 0));
+        self.cvs
+            .fill_rect(sdl3::rect::Rect::new(5, 5, 400, 30))
+            .expect("Failed to fill rectangle");
 
         self.cvs.present();
     }
@@ -77,6 +84,18 @@ impl Window {
         manager.1.insert(hotkey.id, self.get_id());
         self.hotkeys.insert(hotkey);
         Ok(())
+    }
+
+    pub fn set_userdata<T: Any>(&mut self, data: T) {
+        self.userdata = Some(Box::new(data));
+    }
+
+    pub fn get_userdata<T: Any>(&self) -> Option<&T> {
+        self.userdata.as_ref()?.downcast_ref::<T>()
+    }
+
+    pub fn get_userdata_mut<T: Any>(&mut self) -> Option<&mut T> {
+        self.userdata.as_mut()?.downcast_mut::<T>()
     }
 }
 
