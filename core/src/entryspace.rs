@@ -166,19 +166,19 @@ impl EntrySpace {
                     if let Some(path) = each.get("path").and_then(|x| x.as_str()) {
                         // loading lib
                         let path = path.to_string();
-                        
+
                         let action = move || -> Result<BoxedEntry, Box<dyn std::error::Error>> {
                             // TODO: User Confirmation
-                            // TODO: Share lua Vms 
+                            // TODO: Share lua Vms
                             let vm = mlua::Lua::new();
                             vm.load("").exec();
-                            
+
                             todo!()
                         };
                         // error handing
                         let action = move || match action() {
                             Ok(entry) => entry,
-                            Err(e) => Box::new(e.to_string())
+                            Err(e) => Box::new(e.to_string()),
                         };
                         let action = Arc::new(action);
                         raise = action.clone();
@@ -253,21 +253,21 @@ impl EntrySpace {
 impl ActiveEntry for EntrySpace {
     fn push(&mut self, args: EntryArgs) {
         // Auto Trigger
-        if let Some((prefix, args)) = args.split_once(' ') {
-            if let Some(trigger) = self.triggers.get(prefix) {
-                match self.active_trigger.as_mut() {
-                    // The same trigger
-                    Some(active) if active.0 == trigger.ident => {
-                        active.1.push(args.to_string());
-                    }
-                    // A different trigger or no trigger
-                    Some(_) | None => {
-                        let active = (trigger.raise)();
-                        self.active_trigger.replace((trigger.ident, active));
-                    }
+        if let Some((prefix, args)) = args.split_once(' ')
+            && let Some(trigger) = self.triggers.get(prefix)
+        {
+            match self.active_trigger.as_mut() {
+                // The same trigger
+                Some(active) if active.0 == trigger.ident => {
+                    active.1.push(args.to_string());
                 }
-                return;
+                // A different trigger or no trigger
+                Some(_) | None => {
+                    let active = (trigger.raise)();
+                    self.active_trigger.replace((trigger.ident, active));
+                }
             }
+            return;
         }
 
         self.active_trigger.take();
