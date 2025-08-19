@@ -34,4 +34,32 @@ pub enum Invoke {
 //      need to write a function. That'll be easy.
 
 // TODO: ULTIMATE-ULTRA-PLUS-STRING-CLONING-COSTS-
-//      That's cool. Ownership? Clone. 
+//      That's cool. Ownership? Clone.
+
+// #[repr(C)]
+// pub struct CEntry<T = ()> {
+//     pub data: *mut T,
+//     pub push: unsafe extern "C" fn(*mut T, args: EntryArgs),
+//     pub read: unsafe extern "C" fn(*mut T, index: usize) -> Option<Read>,
+//     pub call: unsafe extern "C" fn(*mut T, index: usize) -> Option<Invoke>,
+//     pub raise: unsafe extern "C" fn(*mut T, index: usize) -> Option<BoxedEntry>,
+//     pub _phantom: PhantomData<T>,
+// }
+
+// impl ActiveEntry for CEntry {
+//     fn push(&mut self, args: EntryArgs) {
+//         unsafe { (self.push)(self.data, args) }
+//     }
+
+//     fn read(&self, index: usize) -> Option<Read> {
+//         unsafe { (self.read)(self.data, index) }
+//     }
+
+//     fn call(&self, index: usize) -> Option<Invoke> {
+//         unsafe { (self.call)(self.data, index) }
+//     }
+
+//     fn raise(&self, index: usize) -> Option<BoxedEntry> {
+//         unsafe { (self.raise)(self.data, index) }
+//     }
+// }

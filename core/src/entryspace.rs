@@ -3,7 +3,7 @@ use std::{process::Command, str::FromStr, sync::Arc};
 use hashbrown::HashMap;
 use log::*;
 
-use crate::{entry::*, search::SearchEngine};
+use crate::{dylib::DylibEntry, entry::*, search::SearchEngine};
 
 type Ident = u64;
 
@@ -86,7 +86,7 @@ impl EntrySpace {
     /// args = ["init"]
     ///
     /// # TODO: `loader` table defines custom loaders
-    /// # builtin loader: dylib, *cdylib, shell, *lua
+    /// # builtin loader: dylib, *cdylib, shell, lua
     /// [loader.fruit]
     /// base = "rust"           # Available variables: *rust, *lua, *bin
     /// path = "fruit.dll"      # Path to loader library
@@ -143,9 +143,37 @@ impl EntrySpace {
                             // Safety: No. No safety at all. That depends on users.
                             unsafe {
                                 let lib = Library::new(&path)?;
-                                let func = lib.get::<unsafe fn() -> BoxedEntry>(b"entry\0")?;
-                                Ok(func())
+                                let init = lib.get::<unsafe extern "C" fn()>(b"init")?;
+                                init();
+                                Ok(Box::new(DylibEntry { lib }))
                             }
+                        };
+                        // error handing
+                        let action = move || match action() {
+                            Ok(entry) => entry,
+                            Err(e) => Box::new(e.to_string()),
+                        };
+                        let action = Arc::new(action);
+                        raise = action.clone();
+                        invoke = Arc::new(move || Invoke::Raise(action()));
+                    } else {
+                        invoke =
+                            Arc::new(|| Invoke::Raise(Box::new("Dylib entry lack of `path` key!")));
+                        raise = Arc::new(|| Box::new("Dylib entry lack of `path` key!"));
+                    }
+                }
+                Some("lua") => {
+                    if let Some(path) = each.get("path").and_then(|x| x.as_str()) {
+                        // loading lib
+                        let path = path.to_string();
+                        
+                        let action = move || -> Result<BoxedEntry, Box<dyn std::error::Error>> {
+                            // TODO: User Confirmation
+                            // TODO: Share lua Vms 
+                            let vm = mlua::Lua::new();
+                            vm.load("").exec();
+                            
+                            todo!()
                         };
                         // error handing
                         let action = move || match action() {
@@ -157,8 +185,8 @@ impl EntrySpace {
                         invoke = Arc::new(move || Invoke::Raise(action()));
                     } else {
                         invoke =
-                            Arc::new(|| Invoke::Raise(Box::new("Dylib entry lack of `path` key!")));
-                        raise = Arc::new(|| Box::new("Dylib entry lack of `path` key!"));
+                            Arc::new(|| Invoke::Raise(Box::new("Lua entry lack of `path` key!")));
+                        raise = Arc::new(|| Box::new("Lua entry lack of `path` key!"));
                     }
                 }
                 Some(_) => {

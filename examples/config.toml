@@ -54,9 +54,3 @@ title = "Neovim"
 description = "Open Neovim."
 crate-type = "shell"
 exec = "nvim"
-
-[[entry]]
-name = "calc"
-title = "Calculator"
-crate-type = "dylib"
-path = "libdepot_calc.so"
