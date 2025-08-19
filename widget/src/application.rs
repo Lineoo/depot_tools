@@ -12,8 +12,8 @@ use crate::window::{
     Window, WindowDirector,
     win_strategy::{CloseStrategy, MinimizeStrategy, WindowStrategy},
 };
-use cosmic_text::{FontSystem, SwashCache};
 use global_hotkey::{GlobalHotKeyEvent, GlobalHotKeyManager};
+use sdl3::ttf::Sdl3TtfContext;
 use sdl3::{
     Sdl, VideoSubsystem,
     event::{Event, WindowEvent},
@@ -27,12 +27,10 @@ pub struct Application {
     // SDL context and video subsystem
     sdl_context: Sdl,
     video_subsystem: VideoSubsystem,
+    ttf_ctx: Rc<RefCell<Sdl3TtfContext>>,
 
     // HashMap to store windows by their IDs
     wins: HashMap<u32, WindowDirector>,
-
-    // Font system for text rendering
-    text_mgr: Rc<RefCell<TextMgr>>,
 
     // Global hotkey manager and a map to associate hotkeys with window IDs
     hotkey_mgr: Rc<RefCell<(GlobalHotKeyManager, HashMap<u32, u32>)>>,
@@ -47,14 +45,14 @@ impl Application {
         let video_subsystem = sdl_context
             .video()
             .expect("Failed to initialize video subsystem");
+        let ttf_ctx = Rc::new(RefCell::new(
+            sdl3::ttf::init().expect("Failed to initialize TTF context"),
+        ));
         Application {
             sdl_context,
             video_subsystem,
+            ttf_ctx,
             wins: HashMap::new(),
-            text_mgr: Rc::new(RefCell::new(TextMgr {
-                font_system: FontSystem::new(),
-                swash_cache: SwashCache::new(),
-            })),
             hotkey_mgr: Rc::new(RefCell::new((
                 GlobalHotKeyManager::new().expect("Failed to create hotkey manager"),
                 HashMap::new(),
@@ -72,7 +70,7 @@ impl Application {
                     .expect("Failed to create window"),
                 self.hotkey_mgr.clone(),
                 self.apply_control_id(),
-                self.text_mgr.clone(),
+                self.ttf_ctx.clone(),
             ),
             HashMap::new(),
         )
@@ -172,9 +170,4 @@ impl Default for Application {
     fn default() -> Self {
         Self::new()
     }
-}
-
-pub(crate) struct TextMgr {
-    pub(crate) font_system: FontSystem,
-    pub(crate) swash_cache: SwashCache,
 }

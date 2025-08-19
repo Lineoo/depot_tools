@@ -60,7 +60,7 @@ fn main() {
                 let c = if code == Keycode::Space {
                     ' '.to_string()
                 } else {
-                    code.name()
+                    code.name().to_lowercase()
                 };
                 let userdata = win.get_userdata_mut::<(String, usize)>().unwrap();
                 userdata.0.insert_str(userdata.1, c.as_str());

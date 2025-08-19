@@ -5,11 +5,14 @@ use std::{
     rc::Rc,
 };
 
-use crate::application::{IdType, TextMgr};
+use crate::application::IdType;
 use crate::window::win_strategy::*;
-use cosmic_text::{Buffer, Metrics};
 use global_hotkey::{GlobalHotKeyManager, hotkey::HotKey};
-use sdl3::render::WindowCanvas;
+use sdl3::{
+    pixels::Color,
+    render::{FRect, WindowCanvas},
+    ttf,
+};
 use thiserror::Error;
 
 pub struct Window {
@@ -17,7 +20,9 @@ pub struct Window {
     hotkey_manager: Rc<RefCell<(GlobalHotKeyManager, HashMap<u32, u32>)>>,
     hotkeys: HashSet<HotKey>,
     id: IdType,
+    ttf_ctx: Rc<RefCell<ttf::Sdl3TtfContext>>,
     userdata: Option<Box<dyn Any>>,
+    font: Option<ttf::Font<'static>>,
 }
 
 impl Window {
@@ -25,19 +30,19 @@ impl Window {
         win: sdl3::video::Window,
         hotkey_manager: Rc<RefCell<(GlobalHotKeyManager, HashMap<u32, u32>)>>,
         id: IdType,
-        text_mgr: Rc<RefCell<TextMgr>>,
+        ttf_ctx: Rc<RefCell<sdl3::ttf::Sdl3TtfContext>>,
     ) -> Self {
-        let mut text_mgr_ref = text_mgr.borrow_mut();
-        let metrics = Metrics::new(24.0, 20.0);
-        let mut buffer = Buffer::new(&mut text_mgr_ref.font_system, metrics);
-        let mut buffer = buffer.borrow_with(&mut text_mgr_ref.font_system);
-
+        let font = ttf_ctx
+            .borrow_mut()
+            .load_font("./FiraCode-Regular.ttf", 26.0);
         Window {
             cvs: win.into_canvas(),
             hotkey_manager,
             hotkeys: HashSet::new(),
             id,
+            ttf_ctx,
             userdata: None,
+            font: font.ok(),
         }
     }
 
@@ -54,7 +59,18 @@ impl Window {
         self.cvs
             .fill_rect(sdl3::rect::Rect::new(5, 5, 400, 30))
             .expect("Failed to fill rectangle");
-
+        if let Some(font) = &self.font {
+            let r = font
+                .render(self.get_userdata::<(String, usize)>().unwrap().0.as_str())
+                .blended(Color::RGB(255, 255, 255));
+            if let Ok(texture) = r {
+                self.cvs.copy(
+                    &texture.as_texture(&self.cvs.texture_creator()).unwrap(),
+                    texture.rect(),
+                    FRect::new(7.0, 7.0, texture.width() as f32, texture.height() as f32),
+                );
+            }
+        }
         self.cvs.present();
     }
 

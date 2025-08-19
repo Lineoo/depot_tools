@@ -18,5 +18,8 @@ target/
 # RustRover
 .idea/
 
+# Zed
+.zed/
+
 *.o
 SDL3.dll
