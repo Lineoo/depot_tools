@@ -1,3 +1,5 @@
+mod backend;
+
 use widget::{
     Keycode,
     application::Application,
@@ -14,6 +16,8 @@ use widget::{
 
 fn main_old() {
     let mut app = Application::new();
+
+    let kcore = backend::KitCore::new();
 
     let mut w = app.make_window("Test", 410, 40);
     w.no_decorations();
@@ -55,7 +59,15 @@ fn main_old() {
         let key = *key.unwrap().downcast::<Keycode>().unwrap();
         match key {
             Keycode::Return => {
-                todo!("Call commands here")
+                let selected_idx = 0;
+
+                let mut kcore = kcore.lock();
+                if kcore.stack().call(selected_idx) == depot_core::stack::StackCall::Exit {
+                    println!("Exit!");
+                    win.hide();
+                } else {
+                    redraw(&mut kcore);
+                }
             }
             Keycode::Escape => {
                 win.hide();
@@ -66,6 +78,10 @@ fn main_old() {
                     userdata.0.remove(userdata.1 - 1);
                     userdata.1 -= 1;
                 }
+
+                let mut kcore = kcore.lock();
+                kcore.stack().write(userdata.0.clone());
+                redraw(&mut kcore);
             }
             Keycode::Left | Keycode::Right => {
                 let userdata = win.get_userdata_mut::<(String, usize)>().unwrap();
@@ -76,6 +92,14 @@ fn main_old() {
                     *cursor += 1;
                 }
             }
+            Keycode::Up => {
+                let mut kcore = kcore.lock();
+                kcore.selector_up();
+            }
+            Keycode::Down => {
+                let mut kcore = kcore.lock();
+                kcore.selector_down();
+            }
             code if is_char(code) => {
                 let c = if code == Keycode::Space {
                     ' '.to_string()
@@ -85,6 +109,10 @@ fn main_old() {
                 let userdata = win.get_userdata_mut::<(String, usize)>().unwrap();
                 userdata.0.insert_str(userdata.1, c.as_str());
                 userdata.1 += 1;
+
+                let mut kcore = kcore.lock();
+                kcore.stack().write(userdata.0.clone());
+                redraw(&mut kcore);
             }
             _ => {}
         }
