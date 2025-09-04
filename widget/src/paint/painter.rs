@@ -3,7 +3,7 @@ use std::{cell::RefCell, rc::Rc};
 use sdl3::{
     pixels::{Color, PixelFormatEnum},
     rect::Rect as SdlRect,
-    render::{Canvas, FRect, TextureCreator},
+    render::{Canvas, TextureCreator},
     surface::Surface,
     video::WindowContext,
 };

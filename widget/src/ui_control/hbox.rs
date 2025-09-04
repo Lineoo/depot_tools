@@ -44,10 +44,6 @@ impl Control for HBox {
     fn size(&self) -> (u32, u32) {
         todo!()
     }
-
-    fn reg_tree(&mut self, mgr: &mut super::ctrl_mgr::CtrlMgr) {
-        todo!()
-    }
 }
 
 impl Group for HBox {

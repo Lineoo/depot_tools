@@ -2,13 +2,13 @@ use std::num::NonZero;
 
 use crate::application::IdType;
 
-pub(crate) struct IdManager {
+pub struct IdManager {
     next_id: IdType,
     unused_ids: Vec<IdType>,
 }
 
 impl IdManager {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         IdManager {
             next_id: NonZero::new(1).unwrap(),
             unused_ids: Vec::new(),

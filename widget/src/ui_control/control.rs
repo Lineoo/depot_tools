@@ -2,7 +2,6 @@ use std::{cell::RefCell, rc::Rc};
 
 use crate::{
     application::IdType,
-    id_manager::IdManager,
     paint::{painter::Painter, shapes::Rect},
     ui_control::ctrl_mgr::CtrlMgr,
 };
@@ -34,8 +33,6 @@ pub trait Control {
         let (w, h) = self.size();
         Rect { x, y, w, h }
     }
-
-    fn reg_tree(&mut self, mgr: &mut CtrlMgr);
 }
 
 pub trait Insertable: Control {

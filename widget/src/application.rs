@@ -6,8 +6,8 @@
 //! Every application should have a single instance of `Application`,
 //! but more instances are not prohibited.
 
-use crate::id_manager::{self, IdManager};
-use crate::ui_control::control::Control;
+use crate::id_manager::IdManager;
+use crate::ui_control::ctrl_creator::CtrlCreator;
 use crate::ui_control::ctrl_mgr::CtrlMgr;
 use crate::window::WindowStrategyError;
 use crate::window::{
@@ -42,6 +42,7 @@ pub struct Application {
 
     // ID manager for generating unique IDs for controls
     id_mgr: Rc<RefCell<IdManager>>,
+    creator: Rc<CtrlCreator>,
 }
 
 impl Application {
@@ -55,6 +56,7 @@ impl Application {
         ));
         let input_util = Rc::new(RefCell::new(video_subsystem.text_input()));
         let id_mgr = Rc::new(RefCell::new(IdManager::new()));
+        let creator = Rc::new(CtrlCreator::new(id_mgr.clone()));
         Application {
             sdl_context,
             video_subsystem,
@@ -67,6 +69,7 @@ impl Application {
                 HashMap::new(),
             ))),
             id_mgr,
+            creator,
         }
     }
 
@@ -101,6 +104,10 @@ impl Application {
 
     pub(crate) fn get_id_mgr(&self) -> Rc<RefCell<IdManager>> {
         self.id_mgr.clone()
+    }
+
+    pub fn creator(&self) -> Rc<CtrlCreator> {
+        self.creator.clone()
     }
 
     pub fn run(&mut self) {

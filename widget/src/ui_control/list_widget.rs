@@ -3,29 +3,31 @@ use std::{cell::RefCell, collections::LinkedList, rc::Rc};
 use sdl3::pixels::Color;
 
 use crate::{
-    application::{Application, IdType},
+    application::IdType,
     id_manager::IdManager,
     paint::{painter::Painter, shapes::Rect},
     ui_control::{
-        control::{Control, Group, Handle, Insertable},
+        control::{Control, Handle, Insertable},
+        ctrl_creator::CtrlCreator,
         ctrl_mgr::CtrlMgr,
     },
 };
 
 pub struct ListWidget {
-    id: Option<IdType>,
+    id: IdType,
     items: LinkedList<ListWidgetItem>,
     geometry: Rect,
-    id_mgr: Option<Rc<RefCell<IdManager>>>,
+    creator: Rc<CtrlCreator>,
 }
 
 impl ListWidget {
-    pub fn new() -> Self {
+    pub fn new(creator: Rc<CtrlCreator>) -> Self {
+        let id = creator.id_mgr().borrow_mut().get_id();
         ListWidget {
-            id: None,
+            id,
             items: LinkedList::new(),
             geometry: Rect::new(0, 0, 0, 0),
-            id_mgr: None,
+            creator,
         }
     }
 
@@ -61,11 +63,7 @@ impl Control for ListWidget {
     }
 
     fn id(&self) -> IdType {
-        debug_assert!(
-            self.id.is_some(),
-            "Control ID is only available after being added to the application."
-        );
-        self.id.unwrap()
+        self.id
     }
 
     fn set_parent_to(&mut self, parent: Handle<Box<dyn Control>>) {
@@ -108,32 +106,17 @@ impl Control for ListWidget {
     fn geometry(&self) -> Rect {
         self.geometry
     }
-
-    fn reg_tree(&mut self, ctrl_mgr: &mut CtrlMgr) {
-        debug_assert!(self.id.is_none(), "Control can only be registered once.");
-        let mut id_mgr = ctrl_mgr.id_mgr.borrow_mut();
-        self.id = Some(id_mgr.get_id());
-    }
 }
 
 impl Insertable for ListWidget {
     fn insert_tree(mut self, mgr: &mut CtrlMgr) {
-        self.id_mgr = Some(mgr.id_mgr.clone());
         mgr.insert_item(Rc::new(RefCell::new(self)));
-    }
-}
-
-impl Default for ListWidget {
-    fn default() -> Self {
-        Self::new()
     }
 }
 
 impl Drop for ListWidget {
     fn drop(&mut self) {
-        if let Some(id_mgr) = &self.id_mgr {
-            id_mgr.borrow_mut().release_id(self.id.unwrap());
-        }
+        self.creator.id_mgr().borrow_mut().release_id(self.id);
     }
 }
 

@@ -20,7 +20,6 @@ impl CtrlMgr {
     }
 
     pub fn add_ctrl<C: Insertable>(&mut self, mut ctrl: C) {
-        ctrl.reg_tree(self);
         ctrl.insert_tree(self);
     }
 
