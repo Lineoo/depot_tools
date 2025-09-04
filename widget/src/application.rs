@@ -6,37 +6,42 @@
 //! Every application should have a single instance of `Application`,
 //! but more instances are not prohibited.
 
-use crate::id_manager::IdManager;
+use crate::id_manager::{self, IdManager};
+use crate::ui_control::control::Control;
+use crate::ui_control::ctrl_mgr::CtrlMgr;
 use crate::window::WindowStrategyError;
 use crate::window::{
     Window, WindowDirector,
     win_strategy::{CloseStrategy, MinimizeStrategy, WindowStrategy},
 };
 use global_hotkey::{GlobalHotKeyEvent, GlobalHotKeyManager};
+use sdl3::keyboard::TextInputUtil;
 use sdl3::ttf::Sdl3TtfContext;
 use sdl3::{
     Sdl, VideoSubsystem,
     event::{Event, WindowEvent},
     keyboard::Keycode,
 };
+use std::num::NonZero;
 use std::{cell::RefCell, collections::HashMap, rc::Rc, time::Duration};
 
-pub type IdType = u64;
+pub type IdType = NonZero<u64>;
 
 pub struct Application {
     // SDL context and video subsystem
     sdl_context: Sdl,
     video_subsystem: VideoSubsystem,
     ttf_ctx: Rc<RefCell<Sdl3TtfContext>>,
+    pub input_util: Rc<RefCell<TextInputUtil>>,
 
     // HashMap to store windows by their IDs
-    wins: HashMap<u32, WindowDirector>,
-
+    pub(crate) wins: Rc<RefCell<HashMap<u32, WindowDirector>>>,
+    pub(crate) controls: Rc<CtrlMgr>,
     // Global hotkey manager and a map to associate hotkeys with window IDs
     hotkey_mgr: Rc<RefCell<(GlobalHotKeyManager, HashMap<u32, u32>)>>,
 
     // ID manager for generating unique IDs for controls
-    id_mgr: IdManager,
+    id_mgr: Rc<RefCell<IdManager>>,
 }
 
 impl Application {
@@ -48,16 +53,20 @@ impl Application {
         let ttf_ctx = Rc::new(RefCell::new(
             sdl3::ttf::init().expect("Failed to initialize TTF context"),
         ));
+        let input_util = Rc::new(RefCell::new(video_subsystem.text_input()));
+        let id_mgr = Rc::new(RefCell::new(IdManager::new()));
         Application {
             sdl_context,
             video_subsystem,
             ttf_ctx,
-            wins: HashMap::new(),
+            input_util,
+            wins: Rc::new(RefCell::new(HashMap::new())),
+            controls: Rc::new(CtrlMgr::new(id_mgr.clone())),
             hotkey_mgr: Rc::new(RefCell::new((
                 GlobalHotKeyManager::new().expect("Failed to create hotkey manager"),
                 HashMap::new(),
             ))),
-            id_mgr: IdManager::new(),
+            id_mgr,
         }
     }
 
@@ -66,38 +75,45 @@ impl Application {
             Window::new(
                 self.video_subsystem
                     .window(title, width, height)
+                    .borderless()
                     .build()
                     .expect("Failed to create window"),
                 self.hotkey_mgr.clone(),
-                self.apply_control_id(),
+                self.get_id_mgr(),
                 self.ttf_ctx.clone(),
+                self.input_util.clone(),
             ),
             HashMap::new(),
         )
     }
 
     pub fn reg_win(&mut self, win: WindowDirector) {
-        self.wins.insert(win.get_win().get_id(), win);
+        self.wins.borrow_mut().insert(win.get_win().get_id(), win);
     }
 
     pub fn apply_control_id(&mut self) -> IdType {
-        self.id_mgr.get_id()
+        self.id_mgr.borrow_mut().get_id()
     }
 
     pub fn drop_control_id(&mut self, id: IdType) {
-        self.id_mgr.release_id(id)
+        self.id_mgr.borrow_mut().release_id(id)
+    }
+
+    pub(crate) fn get_id_mgr(&self) -> Rc<RefCell<IdManager>> {
+        self.id_mgr.clone()
     }
 
     pub fn run(&mut self) {
         let mut event_pump = self.sdl_context.event_pump().unwrap();
+        let mut wins = self.wins.borrow_mut();
         'event_loop: loop {
-            for win in self.wins.values_mut() {
+            for win in wins.values_mut() {
                 win.get_win_mut().paint(); // Call paint on each registered window
             }
             for event in event_pump.poll_iter() {
                 match event {
                     Event::Quit { .. } => {
-                        if self.wins.is_empty() {
+                        if wins.is_empty() {
                             break 'event_loop;
                         }
                     }
@@ -106,12 +122,12 @@ impl Application {
                         win_event: WindowEvent::CloseRequested,
                         ..
                     } => {
-                        let win = self.wins.get_mut(&window_id).unwrap();
+                        let win = wins.get_mut(&window_id).unwrap();
                         if let Ok(WindowStrategy::Close(CloseStrategy::Close))
                         | Err(WindowStrategyError::StrategyNotSet(..)) =
                             win.call_strategy("close_requested")
                         {
-                            self.wins.remove(&window_id);
+                            wins.remove(&window_id);
                         }
                         {}
                     }
@@ -120,15 +136,11 @@ impl Application {
                         win_event: WindowEvent::Minimized,
                         ..
                     } => {
-                        let win = self.wins.get_mut(&window_id).unwrap();
+                        let win = wins.get_mut(&window_id).unwrap();
                         if let Ok(WindowStrategy::Minimize(MinimizeStrategy::Minimize)) =
                             win.call_strategy("minimize")
                         {
-                            self.wins
-                                .get_mut(&window_id)
-                                .unwrap()
-                                .get_win_mut()
-                                .minimize();
+                            wins.get_mut(&window_id).unwrap().get_win_mut().minimize();
                         }
                     }
                     Event::KeyDown {
@@ -140,13 +152,12 @@ impl Application {
                         window_id,
                         ..
                     } => {
-                        self.wins.remove(&window_id);
+                        wins.remove(&window_id);
                     }
                     Event::KeyDown {
                         window_id, keycode, ..
                     } => {
-                        self.wins
-                            .get_mut(&window_id)
+                        wins.get_mut(&window_id)
                             .unwrap()
                             .call_slot("keydown", keycode)
                             .unwrap();
@@ -157,7 +168,7 @@ impl Application {
 
             if let Ok(event) = GlobalHotKeyEvent::receiver().try_recv() {
                 let hm = self.hotkey_mgr.borrow_mut();
-                let win = self.wins.get_mut(hm.1.get(&event.id).unwrap()).unwrap();
+                let win = wins.get_mut(hm.1.get(&event.id).unwrap()).unwrap();
                 let _ = win.call_slot("hotkey", event.id);
             }
 

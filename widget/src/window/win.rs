@@ -2,52 +2,69 @@ use std::{
     any::Any,
     cell::RefCell,
     collections::{HashMap, HashSet},
+    ops::Deref,
     rc::Rc,
 };
 
-use crate::application::IdType;
-use crate::window::win_strategy::*;
+use crate::{application::IdType, paint::shapes::Rect};
+use crate::{id_manager::IdManager, window::win_strategy::*};
 use global_hotkey::{GlobalHotKeyManager, hotkey::HotKey};
 use sdl3::{
+    keyboard::TextInputUtil,
     pixels::Color,
-    render::{FRect, WindowCanvas},
+    render::{FRect, TextureCreator, WindowCanvas},
     ttf,
+    video::WindowContext,
 };
 use thiserror::Error;
 
 pub struct Window {
-    pub(crate) cvs: WindowCanvas,
+    pub cvs: WindowCanvas,
+    texture_creator: Rc<RefCell<TextureCreator<WindowContext>>>,
     hotkey_manager: Rc<RefCell<(GlobalHotKeyManager, HashMap<u32, u32>)>>,
     hotkeys: HashSet<HotKey>,
     id: IdType,
+    id_mgr: Rc<RefCell<IdManager>>,
     ttf_ctx: Rc<RefCell<ttf::Sdl3TtfContext>>,
     userdata: Option<Box<dyn Any>>,
     font: Option<ttf::Font<'static>>,
+    input_util: Rc<RefCell<TextInputUtil>>,
 }
 
 impl Window {
     pub(crate) fn new(
         win: sdl3::video::Window,
         hotkey_manager: Rc<RefCell<(GlobalHotKeyManager, HashMap<u32, u32>)>>,
-        id: IdType,
+        id_mgr: Rc<RefCell<IdManager>>,
         ttf_ctx: Rc<RefCell<sdl3::ttf::Sdl3TtfContext>>,
+        input_util: Rc<RefCell<TextInputUtil>>,
     ) -> Self {
         let font = ttf_ctx
             .borrow_mut()
             .load_font("./FiraCode-Regular.ttf", 26.0);
+        let id = id_mgr.borrow_mut().get_id();
+        let cvs = win.into_canvas();
+        let texture_creator = Rc::new(RefCell::new(cvs.texture_creator()));
         Window {
-            cvs: win.into_canvas(),
+            cvs,
+            texture_creator,
             hotkey_manager,
             hotkeys: HashSet::new(),
             id,
+            id_mgr,
             ttf_ctx,
             userdata: None,
             font: font.ok(),
+            input_util,
         }
     }
 
     pub(crate) fn get_id(&self) -> u32 {
         self.cvs.window().id()
+    }
+
+    pub(crate) fn get_id_mgr(&self) -> Rc<RefCell<IdManager>> {
+        self.id_mgr.clone()
     }
 
     pub(crate) fn paint(&mut self) {
@@ -63,11 +80,11 @@ impl Window {
             let r = font
                 .render(self.get_userdata::<(String, usize)>().unwrap().0.as_str())
                 .blended(Color::RGB(255, 255, 255));
-            if let Ok(texture) = r {
+            if let Ok(surface) = r {
                 self.cvs.copy(
-                    &texture.as_texture(&self.cvs.texture_creator()).unwrap(),
-                    texture.rect(),
-                    FRect::new(7.0, 7.0, texture.width() as f32, texture.height() as f32),
+                    &surface.as_texture(&self.cvs.texture_creator()).unwrap(),
+                    surface.rect(),
+                    FRect::new(7.0, 7.0, surface.width() as f32, surface.height() as f32),
                 );
             }
         }
@@ -92,6 +109,17 @@ impl Window {
 
     pub fn normalize(&mut self) {
         self.cvs.window_mut().restore();
+    }
+
+    pub fn start_input_at(&self, area: Rect) {
+        let input_util = self.input_util.borrow();
+        input_util.set_rect(self.cvs.window(), area.try_into().unwrap(), 10);
+        input_util.start(self.cvs.window());
+    }
+
+    pub fn end_input(&self) {
+        let input_util = self.input_util.borrow();
+        input_util.stop(self.cvs.window());
     }
 
     pub fn reg_hotkey(&mut self, hotkey: HotKey) -> Result<(), global_hotkey::Error> {
@@ -196,6 +224,14 @@ impl WindowDirector {
         } else {
             Err(WindowSlotError::TargetSlotNotExist(name.to_string()))
         }
+    }
+}
+
+impl Deref for WindowDirector {
+    type Target = Window;
+
+    fn deref(&self) -> &Self::Target {
+        &self.win
     }
 }
 

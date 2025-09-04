@@ -2,16 +2,19 @@ use widget::{
     Keycode,
     application::Application,
     global_hotkey::hotkey::{Code, HotKey, Modifiers},
+    paint::shapes::Rect,
     window::win_strategy::{CloseStrategy, MinimizeStrategy, WindowStrategy},
 };
 
 fn main() {
-    let mut app = Application::default();
+    let mut app = Application::new();
 
     let mut w = app.make_window("Test", 410, 40);
     let hotkey = HotKey::new(Some(Modifiers::CONTROL), Code::Space);
 
-    w.get_win_mut().set_userdata((String::new(), 0 as usize));
+    let input_util = app.input_util.clone();
+
+    w.get_win_mut().set_userdata((String::new(), 0usize));
 
     w.set_strategy("close_requested".to_string(), |win| {
         win.normalize();
@@ -31,7 +34,15 @@ fn main() {
         }
     });
 
-    w.set_slot("keydown".to_string(), |win, key| {
+    w.set_slot("keydown".to_string(), move |win, key| {
+        {
+            let window = win.cvs.window().clone();
+            let input_util = input_util.borrow_mut();
+            if !input_util.is_active(&window) {
+                input_util.start(&window);
+                input_util.set_rect(&window, Rect::new(7, 7, 396, 26).try_into().unwrap(), 10);
+            }
+        }
         let key = key.downcast::<Option<Keycode>>().unwrap().unwrap();
         match key {
             Keycode::Return => {

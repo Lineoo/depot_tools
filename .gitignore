@@ -23,3 +23,6 @@ target/
 
 *.o
 SDL3.dll
+
+# KDE directory preferences
+**/.directory

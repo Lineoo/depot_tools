@@ -8,6 +8,12 @@ pub struct Rect {
     pub y: u32,
 }
 
+impl Rect {
+    pub fn new(x: u32, y: u32, w: u32, h: u32) -> Self {
+        Rect { x, y, w, h }
+    }
+}
+
 impl TryFrom<sdl3::rect::Rect> for Rect {
     type Error = TryFromIntError;
 
