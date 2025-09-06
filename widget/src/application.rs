@@ -8,7 +8,7 @@
 
 use crate::id_manager::IdManager;
 use crate::ui_control::ctrl_creator::CtrlCreator;
-use crate::ui_control::ctrl_mgr::CtrlMgr;
+use crate::ui_control::ctrl_mgr::{CtrlMgr, make_creator};
 use crate::window::WindowStrategyError;
 use crate::window::{
     Window, WindowDirector,
@@ -56,14 +56,15 @@ impl Application {
         ));
         let input_util = Rc::new(RefCell::new(video_subsystem.text_input()));
         let id_mgr = Rc::new(RefCell::new(IdManager::new()));
-        let creator = Rc::new(CtrlCreator::new(id_mgr.clone()));
+        let controls = Rc::new(CtrlMgr::new());
+        let creator = Rc::new(make_creator(id_mgr.clone(), controls.clone()));
         Application {
             sdl_context,
             video_subsystem,
             ttf_ctx,
             input_util,
             wins: Rc::new(RefCell::new(HashMap::new())),
-            controls: Rc::new(CtrlMgr::new(id_mgr.clone())),
+            controls,
             hotkey_mgr: Rc::new(RefCell::new((
                 GlobalHotKeyManager::new().expect("Failed to create hotkey manager"),
                 HashMap::new(),

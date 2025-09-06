@@ -3,19 +3,20 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 use crate::{
     application::IdType,
     id_manager::IdManager,
-    ui_control::control::{Control, Insertable},
+    ui_control::{
+        control::{Control, Insertable},
+        ctrl_creator::CtrlCreator,
+    },
 };
 
 pub struct CtrlMgr {
     ctrls: HashMap<IdType, Rc<RefCell<dyn Control>>>,
-    pub id_mgr: Rc<RefCell<IdManager>>,
 }
 
 impl CtrlMgr {
-    pub fn new(id_mgr: Rc<RefCell<IdManager>>) -> Self {
+    pub fn new() -> Self {
         CtrlMgr {
             ctrls: HashMap::new(),
-            id_mgr,
         }
     }
 
@@ -27,4 +28,16 @@ impl CtrlMgr {
         let id = ctrl.borrow().id();
         self.ctrls.insert(id, ctrl);
     }
+
+    pub fn is_valid_id(&self, id: IdType) -> bool {
+        self.ctrls.contains_key(&id)
+    }
+
+    pub fn get_ctrl(&self, id: IdType) -> Option<Rc<RefCell<dyn Control>>> {
+        Some(self.ctrls.get(&id)?.clone())
+    }
+}
+
+pub(crate) fn make_creator(id_mgr: Rc<RefCell<IdManager>>, ctrl_mgr: Rc<CtrlMgr>) -> CtrlCreator {
+    CtrlCreator::new(id_mgr, ctrl_mgr)
 }

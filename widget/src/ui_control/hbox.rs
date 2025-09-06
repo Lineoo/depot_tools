@@ -1,31 +1,31 @@
-use crate::ui_control::control::{Control, Group};
+use crate::{
+    application::IdType,
+    paint::painter::Painter,
+    ui_control::control::{Control, Group},
+};
 
 pub struct HBox {}
 
 impl HBox {}
 
 impl Control for HBox {
-    fn window_id(&self) -> crate::application::IdType {
+    fn window_id(&self) -> Option<IdType> {
         todo!()
     }
 
-    fn parent_id(&self) -> Option<crate::application::IdType> {
+    fn parent_id(&self) -> Option<IdType> {
         todo!()
     }
 
-    fn id(&self) -> crate::application::IdType {
+    fn id(&self) -> IdType {
         todo!()
     }
 
-    fn set_parent_to(&mut self, parent: super::control::Handle<Box<dyn Control>>) {
+    fn set_parent(&mut self, parent_id: IdType) -> bool {
         todo!()
     }
 
-    fn set_parent_by_id(&mut self, parent_id: crate::application::IdType) {
-        todo!()
-    }
-
-    fn paint(&mut self, painter: &mut crate::paint::painter::Painter) {
+    fn paint(&mut self, painter: &mut Painter) {
         todo!()
     }
 
@@ -42,6 +42,10 @@ impl Control for HBox {
     }
 
     fn size(&self) -> (u32, u32) {
+        todo!()
+    }
+
+    fn try_add_child(&mut self, id: IdType) -> bool {
         todo!()
     }
 }
@@ -62,7 +66,7 @@ impl Group for HBox {
         todo!()
     }
 
-    fn child_id_at(&self, idx: usize) -> Option<crate::application::IdType> {
+    fn child_id_at(&self, idx: usize) -> Option<IdType> {
         todo!()
     }
 }

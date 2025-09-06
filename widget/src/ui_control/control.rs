@@ -9,13 +9,13 @@ use crate::{
 pub type Handle<T> = Rc<RefCell<T>>;
 
 pub trait Control {
-    fn window_id(&self) -> IdType;
+    fn window_id(&self) -> Option<IdType>;
 
     fn parent_id(&self) -> Option<IdType>;
     fn id(&self) -> IdType;
 
-    fn set_parent_to(&mut self, parent: Handle<Box<dyn Control>>);
-    fn set_parent_by_id(&mut self, parent_id: IdType);
+    /// true on success and false on failure
+    fn set_parent(&mut self, parent_id: IdType) -> bool;
 
     fn paint(&mut self, painter: &mut Painter);
 
@@ -33,6 +33,9 @@ pub trait Control {
         let (w, h) = self.size();
         Rect { x, y, w, h }
     }
+
+    /// true on success and false on failure
+    fn try_add_child(&mut self, id: IdType) -> bool;
 }
 
 pub trait Insertable: Control {

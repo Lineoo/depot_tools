@@ -14,7 +14,7 @@ use sdl3::{
     pixels::Color,
     render::{FRect, TextureCreator, WindowCanvas},
     ttf,
-    video::WindowContext,
+    video::{Window as SdlWindow, WindowContext},
 };
 use thiserror::Error;
 
@@ -33,7 +33,7 @@ pub struct Window {
 
 impl Window {
     pub(crate) fn new(
-        win: sdl3::video::Window,
+        win: SdlWindow,
         hotkey_manager: Rc<RefCell<(GlobalHotKeyManager, HashMap<u32, u32>)>>,
         id_mgr: Rc<RefCell<IdManager>>,
         ttf_ctx: Rc<RefCell<sdl3::ttf::Sdl3TtfContext>>,
@@ -140,6 +140,10 @@ impl Window {
 
     pub fn get_userdata_mut<T: Any>(&mut self) -> Option<&mut T> {
         self.userdata.as_mut()?.downcast_mut::<T>()
+    }
+
+    pub unsafe fn raw(&self) -> &SdlWindow {
+        self.cvs.window()
     }
 }
 

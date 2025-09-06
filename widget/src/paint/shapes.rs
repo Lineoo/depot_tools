@@ -12,6 +12,14 @@ impl Rect {
     pub fn new(x: u32, y: u32, w: u32, h: u32) -> Self {
         Rect { x, y, w, h }
     }
+
+    pub fn size(&self) -> (u32, u32) {
+        (self.w, self.h)
+    }
+
+    pub fn pos(&self) -> (u32, u32) {
+        (self.x, self.y)
+    }
 }
 
 impl TryFrom<sdl3::rect::Rect> for Rect {
