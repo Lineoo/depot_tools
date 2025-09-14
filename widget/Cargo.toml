@@ -9,7 +9,8 @@ thiserror.workspace = true
 bytemuck = "1.23.2"
 global-hotkey = "0.7.0"
 pollster = "0.4.0"
-sdl3 = { version = "0.14.36", features = ["ttf"] }
+sdl3 = { version = "0.14.36", features = ["raw-window-handle", "ttf"] }
+smallvec.workspace = true
 
 [lib]
 name = "widget"

@@ -10,6 +10,7 @@ fn main() {
     let mut app = Application::new();
 
     let mut w = app.make_window("Test", 410, 40);
+    w.no_decorations();
     let hotkey = HotKey::new(Some(Modifiers::CONTROL), Code::Space);
 
     let input_util = app.input_util.clone();
@@ -28,7 +29,9 @@ fn main() {
     });
 
     w.set_slot("hotkey".to_string(), move |win, key| {
-        if *key.downcast::<u32>().unwrap() == hotkey.id {
+        if let Some(key) = key
+            && *key.downcast::<u32>().unwrap() == hotkey.id
+        {
             win.show();
             win.normalize();
         }
@@ -43,7 +46,7 @@ fn main() {
                 input_util.set_rect(&window, Rect::new(7, 7, 396, 26).try_into().unwrap(), 10);
             }
         }
-        let key = key.downcast::<Option<Keycode>>().unwrap().unwrap();
+        let key = *key.unwrap().downcast::<Keycode>().unwrap();
         match key {
             Keycode::Return => {
                 todo!("Call commands here")

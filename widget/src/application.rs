@@ -79,7 +79,6 @@ impl Application {
             Window::new(
                 self.video_subsystem
                     .window(title, width, height)
-                    .borderless()
                     .build()
                     .expect("Failed to create window"),
                 self.hotkey_mgr.clone(),
@@ -167,7 +166,7 @@ impl Application {
                     } => {
                         wins.get_mut(&window_id)
                             .unwrap()
-                            .call_slot("keydown", keycode)
+                            .call_slot_option("keydown", keycode)
                             .unwrap();
                     }
                     _ => {}

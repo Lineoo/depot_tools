@@ -765,6 +765,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "raw-window-handle"
+version = "0.6.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "20675572f6f24e9e76ef639bc5552774ed45f1c30e2951e1e99c59888861c539"
+
+[[package]]
 name = "redox_syscall"
 version = "0.5.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -861,6 +867,8 @@ dependencies = [
  "bitflags",
  "lazy_static",
  "libc",
+ "objc2",
+ "raw-window-handle",
  "sdl3-sys",
  "sdl3-ttf-sys",
 ]
@@ -947,9 +955,9 @@ dependencies = [
 
 [[package]]
 name = "smallvec"
-version = "1.14.0"
+version = "1.15.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7fcf8323ef1faaee30a44a340193b1ac6814fd9b7b4e88e9d4519a3e4abe1cfd"
+checksum = "67b1b7a3b5fe4f1376887184045fcf45c69e92af734b7aaddc05fb777b6fbd03"
 
 [[package]]
 name = "static_assertions"
@@ -1144,6 +1152,7 @@ dependencies = [
  "log",
  "pollster",
  "sdl3",
+ "smallvec",
  "thiserror",
 ]
 

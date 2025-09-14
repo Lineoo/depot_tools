@@ -2,7 +2,7 @@ use std::{
     any::Any,
     cell::RefCell,
     collections::{HashMap, HashSet},
-    ops::Deref,
+    ops::{Deref, DerefMut},
     rc::Rc,
 };
 
@@ -12,6 +12,7 @@ use global_hotkey::{GlobalHotKeyManager, hotkey::HotKey};
 use sdl3::{
     keyboard::TextInputUtil,
     pixels::Color,
+    raw_window_handle,
     render::{FRect, TextureCreator, WindowCanvas},
     ttf,
     video::{Window as SdlWindow, WindowContext},
@@ -57,6 +58,12 @@ impl Window {
             font: font.ok(),
             input_util,
         }
+    }
+
+    pub fn no_decorations(&mut self) {
+        // todo!();
+        // let handle = self.cvs.window_mut().
+        self.cvs.window_mut().set_bordered(false);
     }
 
     pub(crate) fn get_id(&self) -> u32 {
@@ -158,7 +165,7 @@ impl Drop for Window {
 }
 
 type StrategyFn = Box<dyn FnMut(&mut Window) -> WindowStrategy>;
-type SlotFn = Box<dyn FnMut(&mut Window, Box<dyn Any>)>;
+type SlotFn = Box<dyn FnMut(&mut Window, Option<Box<dyn Any>>)>;
 
 pub struct WindowDirector {
     win: Window,
@@ -197,7 +204,7 @@ impl WindowDirector {
 
     pub fn set_slot<F>(&mut self, name: String, slot: F)
     where
-        F: FnMut(&mut Window, Box<dyn Any>) + 'static,
+        F: FnMut(&mut Window, Option<Box<dyn Any>>) + 'static,
     {
         self.slots.insert(name, Box::new(slot));
     }
@@ -223,7 +230,27 @@ impl WindowDirector {
         arg: Arg,
     ) -> Result<(), WindowSlotError> {
         if let Some(slot) = self.slots.get_mut(name) {
-            slot(&mut self.win, Box::new(arg));
+            slot(&mut self.win, Some(Box::new(arg)));
+            Ok(())
+        } else {
+            Err(WindowSlotError::TargetSlotNotExist(name.to_string()))
+        }
+    }
+
+    pub(crate) fn call_slot_option<Arg: Any>(
+        &mut self,
+        name: &str,
+        arg: Option<Arg>,
+    ) -> Result<(), WindowSlotError> {
+        if let Some(slot) = self.slots.get_mut(name) {
+            slot(
+                &mut self.win,
+                if let Some(arg) = arg {
+                    Some(Box::new(arg))
+                } else {
+                    None
+                },
+            );
             Ok(())
         } else {
             Err(WindowSlotError::TargetSlotNotExist(name.to_string()))
@@ -236,6 +263,12 @@ impl Deref for WindowDirector {
 
     fn deref(&self) -> &Self::Target {
         &self.win
+    }
+}
+
+impl DerefMut for WindowDirector {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.win
     }
 }
 

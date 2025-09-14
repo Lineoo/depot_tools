@@ -1,4 +1,9 @@
-use std::{cell::RefCell, rc::Rc};
+use std::{
+    any::Any,
+    cell::RefCell,
+    panic,
+    rc::{Rc, Weak},
+};
 
 use crate::{
     application::IdType,
@@ -7,6 +12,7 @@ use crate::{
 };
 
 pub type Handle<T> = Rc<RefCell<T>>;
+pub type EventArg = Option<Box<dyn Any>>;
 
 pub trait Control {
     fn window_id(&self) -> Option<IdType>;
@@ -34,6 +40,14 @@ pub trait Control {
         Rect { x, y, w, h }
     }
 
+    fn subscribe_from(&mut self, _event: String, _demander: Weak<RefCell<dyn Control>>) -> bool {
+        panic!("Not implemented");
+    }
+
+    fn subscribe_with(&mut self, _event: String, _function: Box<dyn FnMut(EventArg)>) -> bool {
+        panic!("Not implemented");
+    }
+
     /// true on success and false on failure
     fn try_add_child(&mut self, id: IdType) -> bool;
 }
@@ -43,15 +57,15 @@ pub trait Insertable: Control {
 }
 
 pub trait Container: Control {
-    fn set_children(&mut self, child: Handle<RefCell<dyn Control>>);
+    fn set_children(&mut self, child: Handle<dyn Control>);
 
     fn child(&self) -> Handle<Box<dyn Control>>;
     fn child_id(&self) -> IdType;
 }
 
 pub trait Group: Control {
-    fn add_child(&mut self, child: Handle<RefCell<dyn Control>>);
-    fn add_children(&mut self, children: &[Handle<RefCell<dyn Control>>]);
+    fn add_child(&mut self, child: Handle<dyn Control>);
+    fn add_children(&mut self, children: &[Handle<dyn Control>]);
 
     fn child_count(&self) -> usize;
 
