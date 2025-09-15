@@ -5,7 +5,10 @@ use sdl3::keyboard::TextInputUtil;
 use crate::{
     application::IdType,
     paint::{painter::Painter, shapes::Rect},
-    ui_control::{control::Control, ctrl_creator::CtrlCreator},
+    ui_control::{
+        control::{Container, Control, Group, WeakHandle},
+        ctrl_creator::CtrlCreator,
+    },
 };
 
 pub struct InputBox {
@@ -14,6 +17,7 @@ pub struct InputBox {
     win_id: Option<IdType>,
     geometry: Rect,
     creator: Rc<CtrlCreator>,
+    this: Option<WeakHandle<Self>>,
 
     text: String,
     cursor_pos: usize,
@@ -38,21 +42,21 @@ impl Control for InputBox {
         self.id
     }
 
-    fn set_parent(&mut self, parent_id: IdType) -> bool {
-        let ctrl_mgr = self.creator.ctrl_mgr();
-        if !ctrl_mgr.is_valid_id(parent_id) {
-            panic!("Parent id not valid!")
-        }
-        if ctrl_mgr
-            .get_ctrl(parent_id)
-            .unwrap()
-            .borrow_mut()
-            .try_add_child(self.id)
-        {
-            false
-        } else {
-            self.parent_id = Some(parent_id);
+    fn set_parent_container(&mut self, parent: WeakHandle<dyn Container>) -> bool {
+        if let Some(parent) = parent.upgrade() {
+            parent.borrow_mut().set_child(self.this.clone().unwrap());
             true
+        } else {
+            false
+        }
+    }
+
+    fn set_parent_group(&mut self, parent: WeakHandle<dyn Group>) -> bool {
+        if let Some(parent) = parent.upgrade() {
+            parent.borrow_mut().add_child(self.this.clone().unwrap());
+            true
+        } else {
+            false
         }
     }
 

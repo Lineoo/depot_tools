@@ -7,7 +7,7 @@ use crate::{
     application::IdType,
     paint::{painter::Painter, shapes::Rect},
     ui_control::{
-        control::{Control, Insertable},
+        control::{Container, Control, Group, Handle, Insertable, WeakHandle},
         ctrl_creator::CtrlCreator,
         ctrl_mgr::CtrlMgr,
     },
@@ -20,19 +20,23 @@ pub struct ListWidget {
     items: LinkedList<ListWidgetItem>,
     geometry: Rect,
     creator: Rc<CtrlCreator>,
+    this: Option<WeakHandle<ListWidget>>,
 }
 
 impl ListWidget {
-    pub fn new(creator: Rc<CtrlCreator>) -> Self {
+    pub fn create(creator: Rc<CtrlCreator>) -> Handle<Self> {
         let id = creator.id_mgr().borrow_mut().get_id();
-        ListWidget {
+        let r = Handle::new(RefCell::new(ListWidget {
             id,
             parent_id: None,
             win_id: None,
             items: LinkedList::new(),
             geometry: Rect::new(0, 0, 0, 0),
             creator,
-        }
+            this: None,
+        }));
+        r.borrow_mut().this = Some(Rc::downgrade(&r));
+        r
     }
 
     pub fn insert_item(&mut self, item: String, pos: Option<usize>) {
@@ -70,21 +74,21 @@ impl Control for ListWidget {
         self.id
     }
 
-    fn set_parent(&mut self, parent_id: IdType) -> bool {
-        let ctrl_mgr = self.creator.ctrl_mgr();
-        if !ctrl_mgr.is_valid_id(parent_id) {
-            panic!("Parent id not valid!")
-        }
-        if ctrl_mgr
-            .get_ctrl(parent_id)
-            .unwrap()
-            .borrow_mut()
-            .try_add_child(self.id)
-        {
-            false
-        } else {
-            self.parent_id = Some(parent_id);
+    fn set_parent_container(&mut self, parent: WeakHandle<dyn Container>) -> bool {
+        if let Some(parent) = parent.upgrade() {
+            parent.borrow_mut().set_child(self.this.clone().unwrap());
             true
+        } else {
+            false
+        }
+    }
+
+    fn set_parent_group(&mut self, parent: WeakHandle<dyn Group>) -> bool {
+        if let Some(parent) = parent.upgrade() {
+            parent.borrow_mut().add_child(self.this.clone().unwrap());
+            true
+        } else {
+            false
         }
     }
 

@@ -12,6 +12,7 @@ use crate::{
 };
 
 pub type Handle<T> = Rc<RefCell<T>>;
+pub type WeakHandle<T> = Weak<RefCell<T>>;
 pub type EventArg = Option<Box<dyn Any>>;
 
 pub trait Control {
@@ -21,7 +22,8 @@ pub trait Control {
     fn id(&self) -> IdType;
 
     /// true on success and false on failure
-    fn set_parent(&mut self, parent_id: IdType) -> bool;
+    fn set_parent_container(&mut self, parent: WeakHandle<dyn Container>) -> bool;
+    fn set_parent_group(&mut self, parent: WeakHandle<dyn Group>) -> bool;
 
     fn paint(&mut self, painter: &mut Painter);
 
@@ -41,10 +43,12 @@ pub trait Control {
     }
 
     fn subscribe_from(&mut self, _event: String, _demander: Weak<RefCell<dyn Control>>) -> bool {
+        // FIXME: swap duty of subscriber and demander
         panic!("Not implemented");
     }
 
     fn subscribe_with(&mut self, _event: String, _function: Box<dyn FnMut(EventArg)>) -> bool {
+        // FIXME: swap duty of subscriber and demander
         panic!("Not implemented");
     }
 
@@ -57,15 +61,15 @@ pub trait Insertable: Control {
 }
 
 pub trait Container: Control {
-    fn set_children(&mut self, child: Handle<dyn Control>);
+    fn set_child(&mut self, child: WeakHandle<dyn Control>);
 
-    fn child(&self) -> Handle<Box<dyn Control>>;
+    fn child(&self) -> WeakHandle<Box<dyn Control>>;
     fn child_id(&self) -> IdType;
 }
 
 pub trait Group: Control {
-    fn add_child(&mut self, child: Handle<dyn Control>);
-    fn add_children(&mut self, children: &[Handle<dyn Control>]);
+    fn add_child(&mut self, child: WeakHandle<dyn Control>);
+    fn add_children(&mut self, children: &[WeakHandle<dyn Control>]);
 
     fn child_count(&self) -> usize;
 
