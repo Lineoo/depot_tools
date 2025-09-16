@@ -132,7 +132,12 @@ impl Control for HBox {
     }
 
     fn try_add_child(&mut self, id: IdType) -> bool {
-        todo!()
+        if let Some(ctrl) = self.creator.ctrl_mgr().get_ctrl(id) {
+            self.add_child(Rc::downgrade(&ctrl));
+            true
+        } else {
+            false
+        }
     }
 }
 

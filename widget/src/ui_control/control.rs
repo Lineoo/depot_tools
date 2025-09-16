@@ -42,15 +42,11 @@ pub trait Control {
         Rect { x, y, w, h }
     }
 
-    fn subscribe_from(&mut self, _event: String, _demander: Weak<RefCell<dyn Control>>) -> bool {
-        // FIXME: swap duty of subscriber and demander
+    fn subscribe(&mut self, _event: String, _provider: WeakHandle<dyn Control>) -> bool {
         panic!("Not implemented");
     }
 
-    fn subscribe_with(&mut self, _event: String, _function: Box<dyn FnMut(EventArg)>) -> bool {
-        // FIXME: swap duty of subscriber and demander
-        panic!("Not implemented");
-    }
+    // fn on_event(&mut self, event: String, arg: EventArg);
 
     /// true on success and false on failure
     fn try_add_child(&mut self, id: IdType) -> bool;

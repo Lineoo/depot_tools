@@ -1,4 +1,4 @@
-use std::{cell::RefCell, collections::HashMap, error::Error, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use sdl3::ttf::{Font, Sdl3TtfContext};
 
