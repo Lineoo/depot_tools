@@ -14,27 +14,27 @@ use crate::{
     },
 };
 
-struct HBoxItem {
+struct VBoxItem {
     ctrl: Handle<dyn Control>,
     expand: bool,
     // ratio: f32,
     // padding: u32,
 }
 
-pub struct HBox {
+pub struct VBox {
     id: IdType,
     parent_id: Option<IdType>,
     win_id: Option<IdType>,
-    children: SmallVec<[HBoxItem; 3]>,
+    children: SmallVec<[VBoxItem; 3]>,
     geometry: Rect,
     ctrl_ctx: Rc<CtrlCtx>,
     this: Option<WeakHandle<Self>>,
 }
 
-impl HBox {
+impl VBox {
     pub fn create(ctrl_ctx: Rc<CtrlCtx>) -> Rc<RefCell<Self>> {
         let id = ctrl_ctx.id_mgr().borrow_mut().get_id();
-        let r = Rc::new(RefCell::new(HBox {
+        let r = Rc::new(RefCell::new(VBox {
             id,
             parent_id: None,
             win_id: None,
@@ -56,7 +56,7 @@ impl HBox {
     ) {
         let child = child.upgrade();
         if let Some(child) = child {
-            let item = HBoxItem {
+            let item = VBoxItem {
                 ctrl: child,
                 expand,
             };
@@ -75,7 +75,7 @@ impl HBox {
     }
 }
 
-impl Control for HBox {
+impl Control for VBox {
     fn window_id(&self) -> Option<IdType> {
         self.win_id
     }
@@ -107,7 +107,13 @@ impl Control for HBox {
     }
 
     fn paint(&mut self, painter: &mut Painter) {
-        todo!()
+        let expend_count = self
+            .children
+            .iter()
+            .filter(|item| item.expand)
+            .count()
+            .max(1);
+        let (w, h) = self.size();
     }
 
     fn set_pos(&mut self, x: u32, y: u32) {
@@ -142,7 +148,7 @@ impl Control for HBox {
     }
 }
 
-impl Group for HBox {
+impl Group for VBox {
     fn add_child(&mut self, child: WeakHandle<dyn Control>) {
         self.add(child, false, InsertPosition::First);
     }
