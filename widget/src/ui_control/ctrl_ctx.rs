@@ -5,14 +5,14 @@ use crate::{
     ui_control::{control::Handle, ctrl_mgr::CtrlMgr},
 };
 
-pub struct CtrlCreator {
+pub struct CtrlCtx {
     id_mgr: Handle<IdManager>,
     ctrl_mgr: Handle<CtrlMgr>,
 }
 
-impl CtrlCreator {
+impl CtrlCtx {
     pub(crate) fn new(id_mgr: Rc<RefCell<IdManager>>, ctrl_mgr: Handle<CtrlMgr>) -> Self {
-        CtrlCreator { id_mgr, ctrl_mgr }
+        CtrlCtx { id_mgr, ctrl_mgr }
     }
 
     pub fn id_mgr(&self) -> Rc<RefCell<IdManager>> {

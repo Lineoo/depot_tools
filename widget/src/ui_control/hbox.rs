@@ -10,7 +10,7 @@ use crate::{
     paint::{painter::Painter, shapes::Rect},
     ui_control::{
         control::{Container, Control, Group, Handle, WeakHandle},
-        ctrl_creator::CtrlCreator,
+        ctrl_ctx::CtrlCtx,
     },
 };
 
@@ -27,24 +27,24 @@ pub struct HBox {
     win_id: Option<IdType>,
     children: SmallVec<[HBoxItem; 3]>,
     geometry: Rect,
-    creator: Rc<CtrlCreator>,
+    ctrl_ctx: Rc<CtrlCtx>,
     this: Option<WeakHandle<Self>>,
 }
 
 impl HBox {
-    pub fn create(creator: Rc<CtrlCreator>) -> Rc<RefCell<Self>> {
-        let id = creator.id_mgr().borrow_mut().get_id();
+    pub fn create(ctrl_ctx: Rc<CtrlCtx>) -> Rc<RefCell<Self>> {
+        let id = ctrl_ctx.id_mgr().borrow_mut().get_id();
         let r = Rc::new(RefCell::new(HBox {
             id,
             parent_id: None,
             win_id: None,
             children: SmallVec::new(),
             geometry: Rect::new(0, 0, 0, 0),
-            creator: creator.clone(),
+            ctrl_ctx: ctrl_ctx.clone(),
             this: None,
         }));
         r.borrow_mut().this = Some(Rc::downgrade(&r));
-        creator.ctrl_mgr().borrow_mut().insert_item(r.clone());
+        ctrl_ctx.ctrl_mgr().borrow_mut().insert_item(r.clone());
         r
     }
 
@@ -133,7 +133,7 @@ impl Control for HBox {
     }
 
     fn try_add_child(&mut self, id: IdType) -> bool {
-        if let Some(ctrl) = self.creator.ctrl_mgr().borrow().get_ctrl(id) {
+        if let Some(ctrl) = self.ctrl_ctx.ctrl_mgr().borrow().get_ctrl(id) {
             self.add_child(Rc::downgrade(&ctrl));
             true
         } else {

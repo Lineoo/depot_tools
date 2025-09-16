@@ -7,7 +7,7 @@ use crate::{
     paint::{painter::Painter, shapes::Rect},
     ui_control::{
         control::{Container, Control, Group, WeakHandle},
-        ctrl_creator::CtrlCreator,
+        ctrl_ctx::CtrlCtx,
     },
 };
 
@@ -16,7 +16,7 @@ pub struct InputBox {
     parent_id: Option<IdType>,
     win_id: Option<IdType>,
     geometry: Rect,
-    creator: Rc<CtrlCreator>,
+    ctrl_ctx: Rc<CtrlCtx>,
     this: Option<WeakHandle<Self>>,
 
     text: String,
@@ -89,7 +89,7 @@ impl Control for InputBox {
 
 impl Drop for InputBox {
     fn drop(&mut self) {
-        self.creator.id_mgr().borrow_mut().release_id(self.id);
+        self.ctrl_ctx.id_mgr().borrow_mut().release_id(self.id);
     }
 }
 

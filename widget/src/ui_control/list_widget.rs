@@ -8,7 +8,7 @@ use crate::{
     paint::{painter::Painter, shapes::Rect},
     ui_control::{
         control::{Container, Control, Group, Handle, Insertable, WeakHandle},
-        ctrl_creator::CtrlCreator,
+        ctrl_ctx::CtrlCtx,
         ctrl_mgr::CtrlMgr,
     },
 };
@@ -19,24 +19,24 @@ pub struct ListWidget {
     win_id: Option<IdType>,
     items: LinkedList<ListWidgetItem>,
     geometry: Rect,
-    creator: Rc<CtrlCreator>,
+    ctrl_ctx: Rc<CtrlCtx>,
     this: Option<WeakHandle<ListWidget>>,
 }
 
 impl ListWidget {
-    pub fn create(creator: Rc<CtrlCreator>) -> Handle<Self> {
-        let id = creator.id_mgr().borrow_mut().get_id();
+    pub fn create(ctrl_ctx: Rc<CtrlCtx>) -> Handle<Self> {
+        let id = ctrl_ctx.id_mgr().borrow_mut().get_id();
         let r = Handle::new(RefCell::new(ListWidget {
             id,
             parent_id: None,
             win_id: None,
             items: LinkedList::new(),
             geometry: Rect::new(0, 0, 0, 0),
-            creator: creator.clone(),
+            ctrl_ctx: ctrl_ctx.clone(),
             this: None,
         }));
         r.borrow_mut().this = Some(Rc::downgrade(&r));
-        creator.ctrl_mgr().borrow_mut().insert_item(r.clone());
+        ctrl_ctx.ctrl_mgr().borrow_mut().insert_item(r.clone());
         r
     }
 
@@ -140,7 +140,7 @@ impl Insertable for ListWidget {
 
 impl Drop for ListWidget {
     fn drop(&mut self) {
-        self.creator.id_mgr().borrow_mut().release_id(self.id);
+        self.ctrl_ctx.id_mgr().borrow_mut().release_id(self.id);
     }
 }
 

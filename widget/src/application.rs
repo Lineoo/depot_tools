@@ -7,8 +7,9 @@
 //! but more instances are not prohibited.
 
 use crate::id_manager::IdManager;
-use crate::ui_control::ctrl_creator::CtrlCreator;
-use crate::ui_control::ctrl_mgr::{CtrlMgr, make_creator};
+use crate::ui_control::control::Handle;
+use crate::ui_control::ctrl_ctx::CtrlCtx;
+use crate::ui_control::ctrl_mgr::{CtrlMgr, make_ctrl_ctx};
 use crate::window::WindowStrategyError;
 use crate::window::{
     Window, WindowDirector,
@@ -36,13 +37,13 @@ pub struct Application {
 
     // HashMap to store windows by their IDs
     pub(crate) wins: Rc<RefCell<HashMap<u32, WindowDirector>>>,
-    pub(crate) controls: Rc<CtrlMgr>,
+    pub(crate) controls: Handle<CtrlMgr>,
     // Global hotkey manager and a map to associate hotkeys with window IDs
     hotkey_mgr: Rc<RefCell<(GlobalHotKeyManager, HashMap<u32, u32>)>>,
 
     // ID manager for generating unique IDs for controls
     id_mgr: Rc<RefCell<IdManager>>,
-    creator: Rc<CtrlCreator>,
+    ctrl_ctx: Rc<CtrlCtx>,
 }
 
 impl Application {
@@ -56,8 +57,8 @@ impl Application {
         ));
         let input_util = Rc::new(RefCell::new(video_subsystem.text_input()));
         let id_mgr = Rc::new(RefCell::new(IdManager::new()));
-        let controls = Rc::new(CtrlMgr::new());
-        let creator = Rc::new(make_creator(id_mgr.clone(), controls.clone()));
+        let controls = Rc::new(RefCell::new(CtrlMgr::new()));
+        let ctrl_ctx = Rc::new(make_ctrl_ctx(id_mgr.clone(), controls.clone()));
         Application {
             sdl_context,
             video_subsystem,
@@ -70,7 +71,7 @@ impl Application {
                 HashMap::new(),
             ))),
             id_mgr,
-            creator,
+            ctrl_ctx,
         }
     }
 
@@ -106,8 +107,8 @@ impl Application {
         self.id_mgr.clone()
     }
 
-    pub fn creator(&self) -> Rc<CtrlCreator> {
-        self.creator.clone()
+    pub fn ctrl_ctx(&self) -> Rc<CtrlCtx> {
+        self.ctrl_ctx.clone()
     }
 
     pub fn run(&mut self) {

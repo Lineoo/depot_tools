@@ -5,7 +5,7 @@ use crate::{
     id_manager::IdManager,
     ui_control::{
         control::{Control, Handle, Insertable},
-        ctrl_creator::CtrlCreator,
+        ctrl_ctx::CtrlCtx,
     },
 };
 
@@ -38,9 +38,6 @@ impl CtrlMgr {
     }
 }
 
-pub(crate) fn make_creator(
-    id_mgr: Rc<RefCell<IdManager>>,
-    ctrl_mgr: Handle<CtrlMgr>,
-) -> CtrlCreator {
-    CtrlCreator::new(id_mgr, ctrl_mgr)
+pub(crate) fn make_ctrl_ctx(id_mgr: Rc<RefCell<IdManager>>, ctrl_mgr: Handle<CtrlMgr>) -> CtrlCtx {
+    CtrlCtx::new(id_mgr, ctrl_mgr)
 }
