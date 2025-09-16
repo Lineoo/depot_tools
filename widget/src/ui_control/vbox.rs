@@ -114,6 +114,19 @@ impl Control for VBox {
             .count()
             .max(1);
         let (w, h) = self.size();
+        let rest_height = h - self
+            .children
+            .iter()
+            .filter(|item| !item.expand)
+            .map(|item| item.ctrl.borrow().size().1)
+            .sum::<u32>();
+        let expend_height = rest_height / expend_count as u32;
+        for child in &self.children {
+            let (_cw, ch) = child.ctrl.borrow().size();
+            let new_height = if child.expand { expend_height } else { ch };
+            child.ctrl.borrow_mut().set_size(w, new_height);
+            child.ctrl.borrow_mut().paint(painter);
+        }
     }
 
     fn set_pos(&mut self, x: u32, y: u32) {

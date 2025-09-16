@@ -11,7 +11,7 @@ use sdl3::{
 use crate::paint::shapes::Rect;
 
 pub struct Painter {
-    canvas: Canvas<Surface<'static>>,
+    pub(crate) canvas: Canvas<Surface<'static>>,
     creator: Rc<RefCell<TextureCreator<WindowContext>>>,
     size: (u32, u32),
 }

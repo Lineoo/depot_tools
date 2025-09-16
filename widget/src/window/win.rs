@@ -6,7 +6,11 @@ use std::{
     rc::Rc,
 };
 
-use crate::{application::IdType, paint::shapes::Rect};
+use crate::{
+    application::IdType,
+    paint::{painter::Painter, shapes::Rect},
+    ui_control::control::{Control, WeakHandle},
+};
 use crate::{id_manager::IdManager, window::win_strategy::*};
 use global_hotkey::{GlobalHotKeyManager, hotkey::HotKey};
 use sdl3::{
@@ -14,6 +18,7 @@ use sdl3::{
     pixels::Color,
     raw_window_handle,
     render::{FRect, TextureCreator, WindowCanvas},
+    surface::Surface,
     ttf,
     video::{Window as SdlWindow, WindowContext},
 };
@@ -30,6 +35,8 @@ pub struct Window {
     userdata: Option<Box<dyn Any>>,
     font: Option<ttf::Font<'static>>,
     input_util: Rc<RefCell<TextInputUtil>>,
+
+    child: Option<WeakHandle<dyn Control>>,
 }
 
 impl Window {
@@ -57,6 +64,7 @@ impl Window {
             userdata: None,
             font: font.ok(),
             input_util,
+            child: None,
         }
     }
 
@@ -75,27 +83,47 @@ impl Window {
     }
 
     pub(crate) fn paint(&mut self) {
-        self.cvs
-            .set_draw_color(sdl3::pixels::Color::RGB(255, 252, 241));
-        self.cvs.clear();
+        // self.cvs
+        //     .set_draw_color(sdl3::pixels::Color::RGB(255, 252, 241));
+        // self.cvs.clear();
 
-        self.cvs.set_draw_color(sdl3::pixels::Color::RGB(0, 0, 0));
-        self.cvs
-            .fill_rect(sdl3::rect::Rect::new(5, 5, 400, 30))
-            .expect("Failed to fill rectangle");
-        if let Some(font) = &self.font {
-            let r = font
-                .render(self.get_userdata::<(String, usize)>().unwrap().0.as_str())
-                .blended(Color::RGB(255, 255, 255));
-            if let Ok(surface) = r {
-                self.cvs.copy(
-                    &surface.as_texture(&self.cvs.texture_creator()).unwrap(),
-                    surface.rect(),
-                    FRect::new(7.0, 7.0, surface.width() as f32, surface.height() as f32),
-                );
-            }
+        // self.cvs.set_draw_color(sdl3::pixels::Color::RGB(0, 0, 0));
+        // self.cvs
+        //     .fill_rect(sdl3::rect::Rect::new(5, 5, 400, 30))
+        //     .expect("Failed to fill rectangle");
+        // if let Some(font) = &self.font {
+        //     let r = font
+        //         .render(self.get_userdata::<(String, usize)>().unwrap().0.as_str())
+        //         .blended(Color::RGB(255, 255, 255));
+        //     if let Ok(surface) = r {
+        //         self.cvs.copy(
+        //             &surface.as_texture(&self.cvs.texture_creator()).unwrap(),
+        //             surface.rect(),
+        //             FRect::new(7.0, 7.0, surface.width() as f32, surface.height() as f32),
+        //         );
+        //     }
+        // }
+        // self.cvs.present();
+        let mut p = Painter::new(self.cvs.window().size(), self.texture_creator.clone());
+        if let Some(child) = &self.child
+            && let Some(child) = child.upgrade()
+        {
+            let mut child = child.borrow_mut();
+            let (width, height) = self.cvs.window().size();
+            child.set_size(width, height);
+            child.paint(&mut p);
         }
-        self.cvs.present();
+        self.cvs.clear();
+        let (w, h) = self.cvs.window().size();
+        let rect = FRect::new(0.0, 0.0, w as f32, h as f32);
+        self.cvs.copy(
+            &p.canvas
+                .into_surface()
+                .as_texture(self.texture_creator.borrow().deref())
+                .unwrap(),
+            Some(rect),
+            Some(rect),
+        );
     }
 
     pub fn show(&mut self) {
@@ -127,6 +155,14 @@ impl Window {
     pub fn end_input(&self) {
         let input_util = self.input_util.borrow();
         input_util.stop(self.cvs.window());
+    }
+
+    pub fn size(&self) -> (u32, u32) {
+        self.cvs.window().size()
+    }
+
+    pub fn set_child(&mut self, child: WeakHandle<dyn Control>) {
+        self.child = Some(child);
     }
 
     pub fn reg_hotkey(&mut self, hotkey: HotKey) -> Result<(), global_hotkey::Error> {

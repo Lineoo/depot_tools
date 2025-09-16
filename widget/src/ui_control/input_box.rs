@@ -61,7 +61,8 @@ impl Control for InputBox {
     }
 
     fn paint(&mut self, painter: &mut Painter) {
-        todo!()
+        painter.text(&self.text, 10, 10);
+        // TODO: more decorations and cursor
     }
 
     fn set_pos(&mut self, x: u32, y: u32) {
