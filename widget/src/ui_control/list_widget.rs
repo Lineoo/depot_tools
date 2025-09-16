@@ -32,10 +32,11 @@ impl ListWidget {
             win_id: None,
             items: LinkedList::new(),
             geometry: Rect::new(0, 0, 0, 0),
-            creator,
+            creator: creator.clone(),
             this: None,
         }));
         r.borrow_mut().this = Some(Rc::downgrade(&r));
+        creator.ctrl_mgr().borrow_mut().insert_item(r.clone());
         r
     }
 

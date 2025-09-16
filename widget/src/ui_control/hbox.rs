@@ -40,10 +40,11 @@ impl HBox {
             win_id: None,
             children: SmallVec::new(),
             geometry: Rect::new(0, 0, 0, 0),
-            creator,
+            creator: creator.clone(),
             this: None,
         }));
         r.borrow_mut().this = Some(Rc::downgrade(&r));
+        creator.ctrl_mgr().borrow_mut().insert_item(r.clone());
         r
     }
 
@@ -132,7 +133,7 @@ impl Control for HBox {
     }
 
     fn try_add_child(&mut self, id: IdType) -> bool {
-        if let Some(ctrl) = self.creator.ctrl_mgr().get_ctrl(id) {
+        if let Some(ctrl) = self.creator.ctrl_mgr().borrow().get_ctrl(id) {
             self.add_child(Rc::downgrade(&ctrl));
             true
         } else {

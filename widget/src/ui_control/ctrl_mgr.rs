@@ -4,7 +4,7 @@ use crate::{
     application::IdType,
     id_manager::IdManager,
     ui_control::{
-        control::{Control, Insertable},
+        control::{Control, Handle, Insertable},
         ctrl_creator::CtrlCreator,
     },
 };
@@ -24,7 +24,7 @@ impl CtrlMgr {
         ctrl.insert_tree(self);
     }
 
-    pub fn insert_item(&mut self, ctrl: Rc<RefCell<dyn Control>>) {
+    pub fn insert_item(&mut self, ctrl: Handle<dyn Control>) {
         let id = ctrl.borrow().id();
         self.ctrls.insert(id, ctrl);
     }
@@ -33,11 +33,14 @@ impl CtrlMgr {
         self.ctrls.contains_key(&id)
     }
 
-    pub fn get_ctrl(&self, id: IdType) -> Option<Rc<RefCell<dyn Control>>> {
+    pub fn get_ctrl(&self, id: IdType) -> Option<Handle<dyn Control>> {
         Some(self.ctrls.get(&id)?.clone())
     }
 }
 
-pub(crate) fn make_creator(id_mgr: Rc<RefCell<IdManager>>, ctrl_mgr: Rc<CtrlMgr>) -> CtrlCreator {
+pub(crate) fn make_creator(
+    id_mgr: Rc<RefCell<IdManager>>,
+    ctrl_mgr: Handle<CtrlMgr>,
+) -> CtrlCreator {
     CtrlCreator::new(id_mgr, ctrl_mgr)
 }

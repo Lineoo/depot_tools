@@ -1,14 +1,17 @@
 use std::{cell::RefCell, rc::Rc};
 
-use crate::{id_manager::IdManager, ui_control::ctrl_mgr::CtrlMgr};
+use crate::{
+    id_manager::IdManager,
+    ui_control::{control::Handle, ctrl_mgr::CtrlMgr},
+};
 
 pub struct CtrlCreator {
-    id_mgr: Rc<RefCell<IdManager>>,
-    ctrl_mgr: Rc<CtrlMgr>,
+    id_mgr: Handle<IdManager>,
+    ctrl_mgr: Handle<CtrlMgr>,
 }
 
 impl CtrlCreator {
-    pub(crate) fn new(id_mgr: Rc<RefCell<IdManager>>, ctrl_mgr: Rc<CtrlMgr>) -> Self {
+    pub(crate) fn new(id_mgr: Rc<RefCell<IdManager>>, ctrl_mgr: Handle<CtrlMgr>) -> Self {
         CtrlCreator { id_mgr, ctrl_mgr }
     }
 
@@ -16,7 +19,7 @@ impl CtrlCreator {
         self.id_mgr.clone()
     }
 
-    pub fn ctrl_mgr(&self) -> Rc<CtrlMgr> {
+    pub fn ctrl_mgr(&self) -> Handle<CtrlMgr> {
         self.ctrl_mgr.clone()
     }
 }
