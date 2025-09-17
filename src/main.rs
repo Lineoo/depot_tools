@@ -1,12 +1,19 @@
+use std::rc::Rc;
+
 use widget::{
     Keycode,
     application::Application,
+    control::{
+        input_box::InputBox,
+        list_widget::ListWidget,
+        vbox::{InsertPosition, VBox},
+    },
     global_hotkey::hotkey::{Code, HotKey, Modifiers},
     paint::shapes::Rect,
     window::win_strategy::{CloseStrategy, MinimizeStrategy, WindowStrategy},
 };
 
-fn main() {
+fn main_old() {
     let mut app = Application::new();
 
     let mut w = app.make_window("Test", 410, 40);
@@ -96,4 +103,20 @@ fn is_char(code: Keycode) -> bool {
     code >= Keycode::A.to_ll() && code <= Keycode::Z.to_ll()
         || code >= Keycode::_0.to_ll() && code <= Keycode::_9.to_ll()
         || code == Keycode::Space.to_ll()
+}
+
+fn main() {
+    let mut app = Application::new();
+    let mut w = app.make_window("Test", 800, 600);
+    w.no_decorations();
+
+    let ib = InputBox::create(app.ctrl_ctx().clone()).end();
+    let lw = ListWidget::create(app.ctrl_ctx().clone());
+    let vb = VBox::create(app.ctrl_ctx().clone());
+
+    vb.borrow_mut()
+        .add(Rc::downgrade(&ib_control), false, InsertPosition::First);
+
+    app.reg_win(w);
+    app.run();
 }

@@ -6,7 +6,7 @@ use crate::{
     application::IdType,
     paint::{painter::Painter, shapes::Rect},
     ui_control::{
-        control::{Container, Control, Group, WeakHandle},
+        control::{Container, Control, Group, Handle, WeakHandle},
         ctrl_ctx::CtrlCtx,
     },
 };
@@ -23,11 +23,30 @@ pub struct InputBox {
     cursor_pos: usize,
     font_height: Option<f32>,
     placeholder: String,
-    input_util: Rc<RefCell<TextInputUtil>>,
+    input_util: Option<Rc<RefCell<TextInputUtil>>>,
     focused: bool,
 }
 
-impl InputBox {}
+impl InputBox {
+    pub fn create(ctrl_ctx: Rc<CtrlCtx>) -> InputBoxBuilder {
+        let id = ctrl_ctx.id_mgr().borrow_mut().get_id();
+        let r = InputBox {
+            id,
+            parent_id: None,
+            win_id: None,
+            geometry: Rect::new(0, 0, 100, 30),
+            ctrl_ctx: ctrl_ctx.clone(),
+            this: None,
+            text: String::new(),
+            cursor_pos: 0,
+            font_height: None,
+            placeholder: String::from("Input..."),
+            input_util: None,
+            focused: false,
+        };
+        InputBoxBuilder { input_box: r }
+    }
+}
 
 impl Control for InputBox {
     fn window_id(&self) -> Option<IdType> {
@@ -109,7 +128,7 @@ impl InputBoxBuilder {
         self
     }
 
-    pub fn end(self) -> InputBox {
-        self.input_box
+    pub fn end(self) -> Handle<InputBox> {
+        Rc::new(RefCell::new(self.input_box))
     }
 }
