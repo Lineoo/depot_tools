@@ -94,13 +94,13 @@ impl<T: Control + 'static> Handle<T> {
         }
     }
 
-    pub fn borrow(&self) -> Ref<T> {
+    pub fn borrow(&self) -> Ref<'_, T> {
         unsafe { assert!((*self.inner).borrow >= 0, "handle is mutably borrowed") };
         unsafe { (*self.inner).borrow += 1 };
         Ref { owner: self }
     }
 
-    pub fn borrow_mut(&self) -> RefMut<T> {
+    pub fn borrow_mut(&self) -> RefMut<'_, T> {
         unsafe { assert!((*self.inner).borrow == 0, "handle is borrowed") };
         unsafe { (*self.inner).borrow -= 1 };
         RefMut { owner: self }
@@ -120,7 +120,7 @@ impl<T: Control + 'static> Handle<T> {
 }
 
 impl<T: Control + 'static> WeakHandle<T> {
-    pub fn borrow(&self) -> Option<WeakRef<T>> {
+    pub fn borrow(&self) -> Option<WeakRef<'_, T>> {
         if unsafe { (*self.inner).strong == 0 } {
             return None;
         }
@@ -129,7 +129,7 @@ impl<T: Control + 'static> WeakHandle<T> {
         Some(WeakRef { owner: self })
     }
 
-    pub fn borrow_mut(&self) -> Option<WeakRefMut<T>> {
+    pub fn borrow_mut(&self) -> Option<WeakRefMut<'_, T>> {
         if unsafe { (*self.inner).strong == 0 } {
             return None;
         }
@@ -177,7 +177,7 @@ impl<T: Control> DerefMut for RefMut<'_, T> {
 // is dropped before the weak guard is used.
 
 impl<T: Control> WeakRef<'_, T> {
-    fn try_deref(&self) -> Option<&T> {
+    pub fn try_deref(&self) -> Option<&T> {
         if unsafe { (*self.owner.inner).strong == 0 } {
             return None;
         }
@@ -186,14 +186,14 @@ impl<T: Control> WeakRef<'_, T> {
 }
 
 impl<T: Control> WeakRefMut<'_, T> {
-    fn try_deref(&self) -> Option<&T> {
+    pub fn try_deref(&self) -> Option<&T> {
         if unsafe { (*self.owner.inner).strong == 0 } {
             return None;
         }
         unsafe { Some(((*self.owner.inner).data as *mut T).as_ref().unwrap()) }
     }
 
-    fn try_deref_mut(&mut self) -> Option<&mut T> {
+    pub fn try_deref_mut(&mut self) -> Option<&mut T> {
         if unsafe { (*self.owner.inner).strong == 0 } {
             return None;
         }
