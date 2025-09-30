@@ -115,7 +115,7 @@ fn main() {
     let vb = VBox::create(app.ctrl_ctx().clone());
 
     vb.borrow_mut()
-        .add(Rc::downgrade(&ib_control), false, InsertPosition::First);
+        .add(Rc::downgrade(&ib), false, InsertPosition::First);
 
     app.reg_win(w);
     app.run();

@@ -1,2 +1,2 @@
-pub mod strong;
-pub mod weak;
+pub mod handle_untyped;
+pub mod handles;
