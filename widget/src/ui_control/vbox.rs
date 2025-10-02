@@ -1,7 +1,4 @@
-use std::{
-    cell::RefCell,
-    rc::{Rc, Weak},
-};
+use std::rc::Rc;
 
 use smallvec::SmallVec;
 
@@ -9,7 +6,7 @@ use crate::{
     application::IdType,
     paint::{painter::Painter, shapes::Rect},
     ui_control::{
-        control::{Container, Control, Group, Handle, WeakHandle},
+        control::{Control, Handle, WeakHandle},
         ctrl_ctx::CtrlCtx,
     },
 };
@@ -32,9 +29,9 @@ pub struct VBox {
 }
 
 impl VBox {
-    pub fn create(ctrl_ctx: Rc<CtrlCtx>) -> Rc<RefCell<Self>> {
+    pub fn create(ctrl_ctx: Rc<CtrlCtx>) -> Handle<Self> {
         let id = ctrl_ctx.id_mgr().borrow_mut().get_id();
-        let r = Rc::new(RefCell::new(VBox {
+        let r = Handle::new(VBox {
             id,
             parent_id: None,
             win_id: None,
@@ -42,18 +39,16 @@ impl VBox {
             geometry: Rect::new(0, 0, 0, 0),
             ctrl_ctx: ctrl_ctx.clone(),
             this: None,
-        }));
-        r.borrow_mut().this = Some(Rc::downgrade(&r));
-        ctrl_ctx.ctrl_mgr().borrow_mut().insert_item(r.clone());
+        });
+        r.borrow_mut().this = Some(r.downgrade());
+        ctrl_ctx
+            .ctrl_mgr()
+            .borrow_mut()
+            .insert_item(r.clone_untyped());
         r
     }
 
-    pub fn add(
-        &mut self,
-        child: Weak<RefCell<dyn Control>>,
-        expand: bool,
-        position: InsertPosition,
-    ) {
+    pub fn add(&mut self, child: WeakHandle<dyn Control>, expand: bool, position: InsertPosition) {
         let child = child.upgrade();
         if let Some(child) = child {
             let item = VBoxItem {
@@ -88,18 +83,11 @@ impl Control for VBox {
         self.id
     }
 
-    fn set_parent_container(&mut self, parent: WeakHandle<dyn Container>) -> bool {
+    fn set_parent(&mut self, parent: WeakHandle<dyn Control>) -> bool {
         if let Some(parent) = parent.upgrade() {
-            parent.borrow_mut().set_child(self.this.clone().unwrap());
-            true
-        } else {
-            false
-        }
-    }
-
-    fn set_parent_group(&mut self, parent: WeakHandle<dyn Group>) -> bool {
-        if let Some(parent) = parent.upgrade() {
-            parent.borrow_mut().add_child(self.this.clone().unwrap());
+            parent
+                .borrow_mut()
+                .add_child(self.this.clone().unwrap().clone_untyped());
             true
         } else {
             false
@@ -151,37 +139,24 @@ impl Control for VBox {
         self.geometry
     }
 
-    fn try_add_child(&mut self, id: IdType) -> bool {
-        if let Some(ctrl) = self.ctrl_ctx.ctrl_mgr().borrow().get_ctrl(id) {
-            self.add_child(Rc::downgrade(&ctrl));
-            true
-        } else {
-            false
-        }
-    }
-}
-
-impl Group for VBox {
-    fn add_child(&mut self, child: WeakHandle<dyn Control>) {
-        self.add(child, false, InsertPosition::First);
+    fn add_child(&mut self, child: WeakHandle<dyn Control>) -> Result<IdType, ()> {
+        todo!()
     }
 
-    fn add_children(&mut self, children: &[WeakHandle<dyn Control>]) {
-        for child in children {
-            self.add_child(child.clone());
-        }
+    fn remove_child(&mut self, child: WeakHandle<dyn Control>) {
+        todo!()
     }
 
-    fn child_count(&self) -> usize {
-        self.children.len()
+    fn remove_child_by_id(&mut self, child_id: IdType) {
+        todo!()
     }
 
-    fn child_id_at(&self, idx: usize) -> Option<IdType> {
-        if idx >= self.children.len() {
-            None
-        } else {
-            self.children[idx].ctrl.borrow().id().into()
-        }
+    fn get_children(&mut self) {
+        todo!()
+    }
+
+    fn destroy_children(&mut self) {
+        todo!()
     }
 }
 

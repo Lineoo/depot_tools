@@ -1,9 +1,4 @@
-use std::{
-    any::Any,
-    cell::RefCell,
-    panic,
-    rc::{Rc, Weak},
-};
+use std::{any::Any, panic};
 
 use crate::{
     application::IdType,
@@ -11,8 +6,8 @@ use crate::{
     ui_control::ctrl_mgr::CtrlMgr,
 };
 
-pub type Handle<T> = Rc<RefCell<T>>;
-pub type WeakHandle<T> = Weak<RefCell<T>>;
+pub type Handle<T> = crate::ui_control::handle::Handle<T>;
+pub type WeakHandle<T> = crate::ui_control::handle::WeakHandle<T>;
 pub type EventArg = Option<Box<dyn Any>>;
 
 pub trait Control {
@@ -22,8 +17,7 @@ pub trait Control {
     fn id(&self) -> IdType;
 
     /// true on success and false on failure
-    fn set_parent_container(&mut self, parent: WeakHandle<dyn Container>) -> bool;
-    fn set_parent_group(&mut self, parent: WeakHandle<dyn Group>) -> bool;
+    fn set_parent(&mut self, parent: WeakHandle<dyn Control>) -> bool;
 
     fn paint(&mut self, painter: &mut Painter);
 
@@ -49,36 +43,22 @@ pub trait Control {
     // fn on_event(&mut self, event: String, arg: EventArg);
 
     /// true on success and false on failure
-    fn try_add_child(&mut self, id: IdType) -> bool;
+    fn add_child(&mut self, child: WeakHandle<dyn Control>) -> Result<IdType, ()>;
+    fn remove_child(&mut self, child: WeakHandle<dyn Control>);
+    fn remove_child_by_id(&mut self, child_id: IdType);
+
+    fn get_children(&mut self); // add return type
+    fn destroy_children(&mut self);
 }
 
 pub trait Insertable: Control {
     fn insert_tree(self, mgr: &mut CtrlMgr);
 }
 
-pub trait Container: Control {
-    fn set_child(&mut self, child: WeakHandle<dyn Control>);
-
-    fn child(&self) -> WeakHandle<Box<dyn Control>>;
-    fn child_id(&self) -> IdType;
-}
-
-pub trait Group: Control {
-    fn add_child(&mut self, child: WeakHandle<dyn Control>);
-    fn add_children(&mut self, children: &[WeakHandle<dyn Control>]);
-
-    fn child_count(&self) -> usize;
-
-    fn first_child_id(&self) -> Option<IdType> {
-        self.child_id_at(0)
-    }
-    fn last_child_id(&self) -> Option<IdType> {
-        self.child_id_at(self.child_count() - 1)
-    }
-    fn child_id_at(&self, idx: usize) -> Option<IdType>;
-}
-
 pub trait Eventful: Control {
     fn slot_connect<Arg: 'static>(&mut self, name: String, slot: Box<dyn FnMut(Arg) + 'static>);
     fn raise_signal<Arg: 'static>(&mut self, name: String, arg: Arg);
 }
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct AddChildErr(pub ());

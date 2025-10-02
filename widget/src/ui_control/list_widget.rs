@@ -1,5 +1,4 @@
-use core::panic;
-use std::{cell::RefCell, collections::LinkedList, fmt::Debug, rc::Rc};
+use std::{collections::LinkedList, fmt::Debug, rc::Rc};
 
 use sdl3::pixels::Color;
 
@@ -7,7 +6,7 @@ use crate::{
     application::IdType,
     paint::{painter::Painter, shapes::Rect},
     ui_control::{
-        control::{Container, Control, Group, Handle, Insertable, WeakHandle},
+        control::{Control, Handle, Insertable, WeakHandle},
         ctrl_ctx::CtrlCtx,
         ctrl_mgr::CtrlMgr,
     },
@@ -26,7 +25,7 @@ pub struct ListWidget {
 impl ListWidget {
     pub fn create(ctrl_ctx: Rc<CtrlCtx>) -> Handle<Self> {
         let id = ctrl_ctx.id_mgr().borrow_mut().get_id();
-        let r = Handle::new(RefCell::new(ListWidget {
+        let r = Handle::new(ListWidget {
             id,
             parent_id: None,
             win_id: None,
@@ -34,9 +33,12 @@ impl ListWidget {
             geometry: Rect::new(0, 0, 0, 0),
             ctrl_ctx: ctrl_ctx.clone(),
             this: None,
-        }));
-        r.borrow_mut().this = Some(Rc::downgrade(&r));
-        ctrl_ctx.ctrl_mgr().borrow_mut().insert_item(r.clone());
+        });
+        r.borrow_mut().this = Some(r.downgrade());
+        ctrl_ctx
+            .ctrl_mgr()
+            .borrow_mut()
+            .insert_item(r.clone_untyped());
         r
     }
 
@@ -75,18 +77,11 @@ impl Control for ListWidget {
         self.id
     }
 
-    fn set_parent_container(&mut self, parent: WeakHandle<dyn Container>) -> bool {
+    fn set_parent(&mut self, parent: WeakHandle<dyn Control>) -> bool {
         if let Some(parent) = parent.upgrade() {
-            parent.borrow_mut().set_child(self.this.clone().unwrap());
-            true
-        } else {
-            false
-        }
-    }
-
-    fn set_parent_group(&mut self, parent: WeakHandle<dyn Group>) -> bool {
-        if let Some(parent) = parent.upgrade() {
-            parent.borrow_mut().add_child(self.this.clone().unwrap());
+            parent
+                .borrow_mut()
+                .add_child(self.this.clone().unwrap().clone_untyped());
             true
         } else {
             false
@@ -127,14 +122,22 @@ impl Control for ListWidget {
         self.geometry
     }
 
-    fn try_add_child(&mut self, id: IdType) -> bool {
-        false
+    fn add_child(&mut self, child: WeakHandle<dyn Control>) -> Result<IdType, ()> {
+        Err(())
     }
+
+    fn remove_child(&mut self, child: WeakHandle<dyn Control>) {}
+
+    fn remove_child_by_id(&mut self, child_id: IdType) {}
+
+    fn get_children(&mut self) {}
+
+    fn destroy_children(&mut self) {}
 }
 
 impl Insertable for ListWidget {
     fn insert_tree(mut self, mgr: &mut CtrlMgr) {
-        mgr.insert_item(Rc::new(RefCell::new(self)));
+        mgr.insert_item(Handle::new(self).clone_untyped());
     }
 }
 

@@ -1,5 +1,3 @@
-use std::rc::Rc;
-
 use widget::{
     Keycode,
     application::Application,
@@ -115,7 +113,7 @@ fn main() {
     let vb = VBox::create(app.ctrl_ctx().clone());
 
     vb.borrow_mut()
-        .add(Rc::downgrade(&ib), false, InsertPosition::First);
+        .add(ib.downgrade().clone_untyped(), false, InsertPosition::First);
 
     app.reg_win(w);
     app.run();

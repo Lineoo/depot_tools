@@ -6,7 +6,7 @@ use crate::{
     application::IdType,
     paint::{painter::Painter, shapes::Rect},
     ui_control::{
-        control::{Container, Control, Group, Handle, WeakHandle},
+        control::{Control, Handle, WeakHandle},
         ctrl_ctx::CtrlCtx,
     },
 };
@@ -61,18 +61,11 @@ impl Control for InputBox {
         self.id
     }
 
-    fn set_parent_container(&mut self, parent: WeakHandle<dyn Container>) -> bool {
+    fn set_parent(&mut self, parent: WeakHandle<dyn Control>) -> bool {
         if let Some(parent) = parent.upgrade() {
-            parent.borrow_mut().set_child(self.this.clone().unwrap());
-            true
-        } else {
-            false
-        }
-    }
-
-    fn set_parent_group(&mut self, parent: WeakHandle<dyn Group>) -> bool {
-        if let Some(parent) = parent.upgrade() {
-            parent.borrow_mut().add_child(self.this.clone().unwrap());
+            parent
+                .borrow_mut()
+                .add_child(self.this.clone().unwrap().clone_untyped());
             true
         } else {
             false
@@ -102,9 +95,17 @@ impl Control for InputBox {
         self.geometry.size()
     }
 
-    fn try_add_child(&mut self, id: IdType) -> bool {
-        false
+    fn add_child(&mut self, child: WeakHandle<dyn Control>) -> Result<IdType, ()> {
+        Err(())
     }
+
+    fn remove_child(&mut self, child: WeakHandle<dyn Control>) {}
+
+    fn remove_child_by_id(&mut self, child_id: IdType) {}
+
+    fn get_children(&mut self) {}
+
+    fn destroy_children(&mut self) {}
 }
 
 impl Drop for InputBox {
@@ -129,6 +130,6 @@ impl InputBoxBuilder {
     }
 
     pub fn end(self) -> Handle<InputBox> {
-        Rc::new(RefCell::new(self.input_box))
+        Handle::new(self.input_box)
     }
 }

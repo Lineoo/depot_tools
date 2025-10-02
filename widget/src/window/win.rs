@@ -15,10 +15,7 @@ use crate::{id_manager::IdManager, window::win_strategy::*};
 use global_hotkey::{GlobalHotKeyManager, hotkey::HotKey};
 use sdl3::{
     keyboard::TextInputUtil,
-    pixels::Color,
-    raw_window_handle,
     render::{FRect, TextureCreator, WindowCanvas},
-    surface::Surface,
     ttf,
     video::{Window as SdlWindow, WindowContext},
 };

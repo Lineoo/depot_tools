@@ -94,18 +94,6 @@ impl<T: Control + 'static> Handle<T> {
         }
     }
 
-    pub fn borrow(&self) -> Ref<'_, T> {
-        unsafe { assert!((*self.inner).borrow >= 0, "handle is mutably borrowed") };
-        unsafe { (*self.inner).borrow += 1 };
-        Ref { owner: self }
-    }
-
-    pub fn borrow_mut(&self) -> RefMut<'_, T> {
-        unsafe { assert!((*self.inner).borrow == 0, "handle is borrowed") };
-        unsafe { (*self.inner).borrow -= 1 };
-        RefMut { owner: self }
-    }
-
     pub fn clone_untyped(&self) -> Handle {
         unsafe { (*self.inner).strong += 1 };
         Handle {
@@ -119,7 +107,30 @@ impl<T: Control + 'static> Handle<T> {
     }
 }
 
+impl<T: Control + ?Sized> Handle<T> {
+    pub fn borrow(&self) -> Ref<'_, T> {
+        unsafe { assert!((*self.inner).borrow >= 0, "handle is mutably borrowed") };
+        unsafe { (*self.inner).borrow += 1 };
+        Ref { owner: self }
+    }
+
+    pub fn borrow_mut(&self) -> RefMut<'_, T> {
+        unsafe { assert!((*self.inner).borrow == 0, "handle is borrowed") };
+        unsafe { (*self.inner).borrow -= 1 };
+        RefMut { owner: self }
+    }
+}
+
 impl<T: Control + 'static> WeakHandle<T> {
+    pub fn clone_untyped(&self) -> WeakHandle {
+        unsafe { (*self.inner).weak += 1 };
+        WeakHandle {
+            inner: self.inner as *mut HandleInner,
+        }
+    }
+}
+
+impl<T: Control + ?Sized> WeakHandle<T> {
     pub fn borrow(&self) -> Option<WeakRef<'_, T>> {
         if unsafe { (*self.inner).strong == 0 } {
             return None;
@@ -138,13 +149,6 @@ impl<T: Control + 'static> WeakHandle<T> {
         Some(WeakRefMut { owner: self })
     }
 
-    pub fn clone_untyped(&self) -> WeakHandle {
-        unsafe { (*self.inner).weak += 1 };
-        WeakHandle {
-            inner: self.inner as *mut HandleInner,
-        }
-    }
-
     pub fn upgrade(&self) -> Option<Handle<T>> {
         if unsafe { (*self.inner).strong == 0 } {
             return None;
@@ -161,6 +165,13 @@ impl<T: Control> Deref for Ref<'_, T> {
     }
 }
 
+impl Deref for Ref<'_, dyn Control> {
+    type Target = dyn Control;
+    fn deref(&self) -> &Self::Target {
+        unsafe { (*self.owner.inner).data.as_ref().unwrap() }
+    }
+}
+
 impl<T: Control> Deref for RefMut<'_, T> {
     type Target = T;
     fn deref(&self) -> &Self::Target {
@@ -170,6 +181,18 @@ impl<T: Control> Deref for RefMut<'_, T> {
 impl<T: Control> DerefMut for RefMut<'_, T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         unsafe { ((*self.owner.inner).data as *mut T).as_mut().unwrap() }
+    }
+}
+
+impl Deref for RefMut<'_, dyn Control> {
+    type Target = dyn Control;
+    fn deref(&self) -> &Self::Target {
+        unsafe { (*self.owner.inner).data.as_ref().unwrap() }
+    }
+}
+impl DerefMut for RefMut<'_, dyn Control> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        unsafe { (*self.owner.inner).data.as_mut().unwrap() }
     }
 }
 

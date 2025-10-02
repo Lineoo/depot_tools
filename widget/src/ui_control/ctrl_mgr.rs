@@ -10,7 +10,7 @@ use crate::{
 };
 
 pub struct CtrlMgr {
-    ctrls: HashMap<IdType, Rc<RefCell<dyn Control>>>,
+    ctrls: HashMap<IdType, Handle<dyn Control>>,
 }
 
 impl CtrlMgr {
@@ -25,7 +25,7 @@ impl CtrlMgr {
     }
 
     pub fn insert_item(&mut self, ctrl: Handle<dyn Control>) {
-        let id = ctrl.borrow().id();
+        let id = (*ctrl.borrow()).id();
         self.ctrls.insert(id, ctrl);
     }
 
@@ -38,6 +38,9 @@ impl CtrlMgr {
     }
 }
 
-pub(crate) fn make_ctrl_ctx(id_mgr: Rc<RefCell<IdManager>>, ctrl_mgr: Handle<CtrlMgr>) -> CtrlCtx {
+pub(crate) fn make_ctrl_ctx(
+    id_mgr: Rc<RefCell<IdManager>>,
+    ctrl_mgr: Rc<RefCell<CtrlMgr>>,
+) -> CtrlCtx {
     CtrlCtx::new(id_mgr, ctrl_mgr)
 }

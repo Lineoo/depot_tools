@@ -7,7 +7,6 @@
 //! but more instances are not prohibited.
 
 use crate::id_manager::IdManager;
-use crate::ui_control::control::Handle;
 use crate::ui_control::ctrl_ctx::CtrlCtx;
 use crate::ui_control::ctrl_mgr::{CtrlMgr, make_ctrl_ctx};
 use crate::window::WindowStrategyError;
@@ -37,7 +36,7 @@ pub struct Application {
 
     // HashMap to store windows by their IDs
     pub(crate) wins: Rc<RefCell<HashMap<u32, WindowDirector>>>,
-    pub(crate) controls: Handle<CtrlMgr>,
+    pub(crate) controls: Rc<RefCell<CtrlMgr>>,
     // Global hotkey manager and a map to associate hotkeys with window IDs
     hotkey_mgr: Rc<RefCell<(GlobalHotKeyManager, HashMap<u32, u32>)>>,
 
