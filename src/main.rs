@@ -114,6 +114,10 @@ fn main() {
 
     vb.borrow_mut()
         .add(ib.downgrade().clone_untyped(), false, InsertPosition::First);
+    vb.borrow_mut()
+        .add(lw.downgrade().clone_untyped(), true, InsertPosition::Last);
+
+    w.set_child(vb.downgrade().clone_untyped());
 
     app.reg_win(w);
     app.run();

@@ -109,9 +109,13 @@ impl Control for VBox {
             .map(|item| item.ctrl.borrow().size().1)
             .sum::<u32>();
         let expend_height = rest_height / expend_count as u32;
+        let mut y = self.pos().1;
         for child in &self.children {
             let (_cw, ch) = child.ctrl.borrow().size();
+            let pos = child.ctrl.borrow().pos();
+            child.ctrl.borrow_mut().set_pos(pos.0, y);
             let new_height = if child.expand { expend_height } else { ch };
+            y += new_height;
             child.ctrl.borrow_mut().set_size(w, new_height);
             child.ctrl.borrow_mut().paint(painter);
         }

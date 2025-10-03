@@ -15,6 +15,7 @@ use crate::{id_manager::IdManager, window::win_strategy::*};
 use global_hotkey::{GlobalHotKeyManager, hotkey::HotKey};
 use sdl3::{
     keyboard::TextInputUtil,
+    pixels::Color,
     render::{FRect, TextureCreator, WindowCanvas},
     ttf,
     video::{Window as SdlWindow, WindowContext},
@@ -110,6 +111,7 @@ impl Window {
             child.set_size(width, height);
             child.paint(&mut p);
         }
+        p.present();
         self.cvs.clear();
         let (w, h) = self.cvs.window().size();
         let rect = FRect::new(0.0, 0.0, w as f32, h as f32);
@@ -121,6 +123,7 @@ impl Window {
             Some(rect),
             Some(rect),
         );
+        self.cvs.present();
     }
 
     pub fn show(&mut self) {

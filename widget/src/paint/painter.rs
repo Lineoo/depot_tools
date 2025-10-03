@@ -57,4 +57,11 @@ impl Painter {
             .unwrap();
         self.canvas.copy(&texture, source_area, dest_area);
     }
+
+    pub fn present(&mut self) {
+        unsafe {
+            self.canvas.flush_renderer();
+        }
+        self.canvas.present();
+    }
 }

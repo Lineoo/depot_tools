@@ -114,9 +114,6 @@ impl Application {
         let mut event_pump = self.sdl_context.event_pump().unwrap();
         let mut wins = self.wins.borrow_mut();
         'event_loop: loop {
-            for win in wins.values_mut() {
-                win.get_win_mut().paint(); // Call paint on each registered window
-            }
             for event in event_pump.poll_iter() {
                 match event {
                     Event::Quit { .. } => {
@@ -164,13 +161,16 @@ impl Application {
                     Event::KeyDown {
                         window_id, keycode, ..
                     } => {
-                        wins.get_mut(&window_id)
-                            .unwrap()
-                            .call_slot_option("keydown", keycode)
-                            .unwrap();
+                        // wins.get_mut(&window_id)
+                        //     .unwrap()
+                        //     .call_slot_option("keydown", keycode)
+                        //     .unwrap();
                     }
                     _ => {}
                 }
+            }
+            for win in wins.values_mut() {
+                win.get_win_mut().paint(); // Call paint on each registered window
             }
 
             if let Ok(event) = GlobalHotKeyEvent::receiver().try_recv() {

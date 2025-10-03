@@ -89,11 +89,17 @@ impl Control for ListWidget {
     }
 
     fn paint(&mut self, painter: &mut Painter) {
-        painter.set_color(Color::WHITE);
+        painter.set_color(Color::RGBA(255, 255, 255, 255));
         painter.rect(self.geometry);
-        painter.set_color(Color::BLACK);
-        painter.rect(Rect::new(3, 3, self.geometry.w - 6, self.geometry.h - 6));
-        todo!()
+        // let (x, y) = self.pos();
+        // painter.set_color(Color::BLACK);
+        // painter.rect(Rect::new(
+        //     x + 3,
+        //     y + 3,
+        //     self.geometry.w - 6,
+        //     self.geometry.h - 6,
+        // ));
+        // todo!()
     }
 
     fn set_pos(&mut self, x: u32, y: u32) {
