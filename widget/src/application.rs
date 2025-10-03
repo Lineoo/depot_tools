@@ -9,6 +9,7 @@
 use crate::id_manager::IdManager;
 use crate::ui_control::ctrl_ctx::CtrlCtx;
 use crate::ui_control::ctrl_mgr::{CtrlMgr, make_ctrl_ctx};
+use crate::ui_control::font_mgr::FontMgr;
 use crate::window::WindowStrategyError;
 use crate::window::{
     Window, WindowDirector,
@@ -57,7 +58,11 @@ impl Application {
         let input_util = Rc::new(RefCell::new(video_subsystem.text_input()));
         let id_mgr = Rc::new(RefCell::new(IdManager::new()));
         let controls = Rc::new(RefCell::new(CtrlMgr::new()));
-        let ctrl_ctx = Rc::new(make_ctrl_ctx(id_mgr.clone(), controls.clone()));
+        let ctrl_ctx = Rc::new(make_ctrl_ctx(
+            id_mgr.clone(),
+            controls.clone(),
+            Rc::new(RefCell::new(FontMgr::new(ttf_ctx.clone()))),
+        ));
         Application {
             sdl_context,
             video_subsystem,

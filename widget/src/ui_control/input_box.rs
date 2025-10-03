@@ -1,6 +1,6 @@
 use std::{cell::RefCell, rc::Rc};
 
-use sdl3::keyboard::TextInputUtil;
+use sdl3::{keyboard::TextInputUtil, ttf::Font};
 
 use crate::{
     application::IdType,
@@ -17,6 +17,7 @@ pub struct InputBox {
     win_id: Option<IdType>,
     geometry: Rect,
     ctrl_ctx: Rc<CtrlCtx>,
+    font: Rc<RefCell<Font<'static>>>,
     this: Option<WeakHandle<Self>>,
 
     text: String,
@@ -30,12 +31,21 @@ pub struct InputBox {
 impl InputBox {
     pub fn create(ctrl_ctx: Rc<CtrlCtx>) -> InputBoxBuilder {
         let id = ctrl_ctx.id_mgr().borrow_mut().get_id();
+        ctrl_ctx
+            .font_mgr()
+            .borrow_mut()
+            .load_local_font("FiraCode.ttf", 10);
         let r = InputBox {
             id,
             parent_id: None,
             win_id: None,
             geometry: Rect::new(0, 0, 100, 30),
             ctrl_ctx: ctrl_ctx.clone(),
+            font: ctrl_ctx
+                .font_mgr()
+                .borrow()
+                .get_font("FiraCode", 10)
+                .unwrap(),
             this: None,
             text: String::new(),
             cursor_pos: 0,
@@ -74,7 +84,7 @@ impl Control for InputBox {
 
     fn paint(&mut self, painter: &mut Painter) {
         let (x, y) = self.pos();
-        painter.text(&self.text, x + 10, y + 10);
+        painter.text(&self.text, x + 10, y + 10, self.font.clone());
         // TODO: more decorations and cursor
     }
 

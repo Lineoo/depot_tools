@@ -5,6 +5,7 @@ use sdl3::{
     rect::Rect as SdlRect,
     render::{Canvas, TextureCreator},
     surface::Surface,
+    ttf::Font,
     video::WindowContext,
 };
 
@@ -32,7 +33,7 @@ impl Painter {
         self.canvas.fill_rect(Some(rect.into()));
     }
 
-    pub fn text(&mut self, _text: &str, _x: u32, _y: u32) {
+    pub fn text(&mut self, _text: &str, _x: u32, _y: u32, font: Rc<RefCell<Font<'static>>>) {
         // Implementation for painting text
     }
 

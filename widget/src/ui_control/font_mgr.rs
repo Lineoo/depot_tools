@@ -18,10 +18,12 @@ impl FontMgr {
     pub fn load_local_font(&mut self, path: &str, size: u32) -> Result<(), sdl3::Error> {
         let font = self.ctx.borrow_mut().load_font(path, size as f32)?;
         let rc_font = Rc::new(RefCell::new(font));
-        let mut family = self
-            .fonts
-            .entry(path.to_string())
-            .or_insert_with(HashMap::new);
+        let name = if path.ends_with(".ttf") {
+            path[0..path.len() - 4].to_string()
+        } else {
+            path.to_string()
+        };
+        let mut family = self.fonts.entry(name).or_insert_with(HashMap::new);
         family.insert(size, rc_font);
         Ok(())
     }

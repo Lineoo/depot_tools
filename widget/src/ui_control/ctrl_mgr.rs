@@ -6,6 +6,7 @@ use crate::{
     ui_control::{
         control::{Control, Handle, Insertable},
         ctrl_ctx::CtrlCtx,
+        font_mgr::FontMgr,
     },
 };
 
@@ -41,6 +42,7 @@ impl CtrlMgr {
 pub(crate) fn make_ctrl_ctx(
     id_mgr: Rc<RefCell<IdManager>>,
     ctrl_mgr: Rc<RefCell<CtrlMgr>>,
+    font_mgr: Rc<RefCell<FontMgr>>,
 ) -> CtrlCtx {
-    CtrlCtx::new(id_mgr, ctrl_mgr)
+    CtrlCtx::new(id_mgr, ctrl_mgr, font_mgr)
 }
