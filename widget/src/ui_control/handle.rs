@@ -153,7 +153,7 @@ impl<T: Control + ?Sized> WeakHandle<T> {
         if unsafe { (*self.inner).strong == 0 } {
             return None;
         }
-        unsafe { (*self.inner).weak += 1 };
+        unsafe { (*self.inner).strong += 1 };
         Some(Handle { inner: self.inner })
     }
 }
