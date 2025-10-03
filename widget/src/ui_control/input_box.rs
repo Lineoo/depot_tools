@@ -1,6 +1,6 @@
 use std::{cell::RefCell, rc::Rc};
 
-use sdl3::{keyboard::TextInputUtil, ttf::Font};
+use sdl3::{keyboard::TextInputUtil, pixels::Color, ttf::Font};
 
 use crate::{
     application::IdType,
@@ -34,7 +34,7 @@ impl InputBox {
         ctrl_ctx
             .font_mgr()
             .borrow_mut()
-            .load_local_font("FiraCode.ttf", 10);
+            .load_local_font("FiraCode-Regular.ttf", 22);
         let r = InputBox {
             id,
             parent_id: None,
@@ -44,7 +44,7 @@ impl InputBox {
             font: ctrl_ctx
                 .font_mgr()
                 .borrow()
-                .get_font("FiraCode", 10)
+                .get_font("FiraCode-Regular", 22)
                 .unwrap(),
             this: None,
             text: "test".to_string(),
@@ -84,7 +84,8 @@ impl Control for InputBox {
 
     fn paint(&mut self, painter: &mut Painter) {
         let (x, y) = self.pos();
-        painter.text(&self.text, x + 10, y + 10, self.font.clone());
+        painter.set_color(Color::WHITE);
+        painter.text(&self.text, x + 2, y + 2, self.font.clone());
         // TODO: more decorations and cursor
     }
 

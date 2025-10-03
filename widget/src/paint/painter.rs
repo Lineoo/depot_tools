@@ -39,7 +39,7 @@ impl Painter {
         let r = font.borrow_mut().render(text).blended(self.color).unwrap();
         let rect = r.rect();
         self.canvas.copy(
-            &r.as_texture(&self.creator.borrow_mut()).unwrap(),
+            &r.as_texture(&self.canvas.texture_creator()).unwrap(),
             rect,
             SdlRect::new(
                 x.try_into().unwrap(),
