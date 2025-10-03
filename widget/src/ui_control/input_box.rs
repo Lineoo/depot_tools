@@ -47,7 +47,7 @@ impl InputBox {
                 .get_font("FiraCode", 10)
                 .unwrap(),
             this: None,
-            text: String::new(),
+            text: "test".to_string(),
             cursor_pos: 0,
             font_height: None,
             placeholder: String::from("Input..."),

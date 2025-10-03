@@ -15,6 +15,7 @@ pub struct Painter {
     pub(crate) canvas: Canvas<Surface<'static>>,
     creator: Rc<RefCell<TextureCreator<WindowContext>>>,
     size: (u32, u32),
+    color: Color,
 }
 
 impl Painter {
@@ -25,6 +26,7 @@ impl Painter {
             canvas: surface.into_canvas().expect("Could not create canvas"),
             creator,
             size,
+            color: Color::WHITE,
         }
     }
 
@@ -33,13 +35,25 @@ impl Painter {
         self.canvas.fill_rect(Some(rect.into()));
     }
 
-    pub fn text(&mut self, _text: &str, _x: u32, _y: u32, font: Rc<RefCell<Font<'static>>>) {
-        // Implementation for painting text
+    pub fn text(&mut self, text: &str, x: u32, y: u32, font: Rc<RefCell<Font<'static>>>) {
+        let r = font.borrow_mut().render(text).blended(self.color).unwrap();
+        let rect = r.rect();
+        self.canvas.copy(
+            &r.as_texture(&self.creator.borrow_mut()).unwrap(),
+            rect,
+            SdlRect::new(
+                x.try_into().unwrap(),
+                y.try_into().unwrap(),
+                rect.width(),
+                rect.height(),
+            ),
+        );
     }
 
     pub fn set_color(&mut self, color: Color) {
         // Implementation for setting background color
         self.canvas.set_draw_color(color);
+        self.color = color;
     }
 
     pub fn set_font_size(&mut self, w: f32, h: f32) {}
