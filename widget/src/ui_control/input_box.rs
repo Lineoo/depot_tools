@@ -73,7 +73,8 @@ impl Control for InputBox {
     }
 
     fn paint(&mut self, painter: &mut Painter) {
-        painter.text(&self.text, 10, 10);
+        let (x, y) = self.pos();
+        painter.text(&self.text, x + 10, y + 10);
         // TODO: more decorations and cursor
     }
 

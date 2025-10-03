@@ -111,7 +111,6 @@ impl Window {
             child.set_size(width, height);
             child.paint(&mut p);
         }
-        p.present();
         self.cvs.clear();
         let (w, h) = self.cvs.window().size();
         let rect = FRect::new(0.0, 0.0, w as f32, h as f32);
