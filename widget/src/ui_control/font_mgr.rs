@@ -1,4 +1,4 @@
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, path::Path, rc::Rc};
 
 use sdl3::ttf::{Font, Sdl3TtfContext};
 
@@ -15,13 +15,13 @@ impl FontMgr {
         }
     }
 
-    pub fn load_local_font(&mut self, path: &str, size: u32) -> Result<(), sdl3::Error> {
+    pub fn load_local_font(&mut self, path: &Path, size: u32) -> Result<(), sdl3::Error> {
         let font = self.ctx.borrow_mut().load_font(path, size as f32)?;
         let rc_font = Rc::new(RefCell::new(font));
-        let name = if path.ends_with(".ttf") {
-            path[0..path.len() - 4].to_string()
+        let name: String = if path.ends_with(".ttf") {
+            path.file_name().unwrap().to_str().unwrap().to_string()
         } else {
-            path.to_string()
+            path.to_str().unwrap().to_string()
         };
         let mut family = self.fonts.entry(name).or_insert_with(HashMap::new);
         family.insert(size, rc_font);

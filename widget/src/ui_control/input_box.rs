@@ -1,4 +1,4 @@
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, path::Path, rc::Rc};
 
 use sdl3::{keyboard::TextInputUtil, pixels::Color, ttf::Font};
 
@@ -34,7 +34,7 @@ impl InputBox {
         ctrl_ctx
             .font_mgr()
             .borrow_mut()
-            .load_local_font("FiraCode-Regular.ttf", 22);
+            .load_local_font(Path::new("FiraCode-Regular.ttf"), 22);
         let r = InputBox {
             id,
             parent_id: None,
@@ -47,7 +47,7 @@ impl InputBox {
                 .get_font("FiraCode-Regular", 22)
                 .unwrap(),
             this: None,
-            text: "test".to_string(),
+            text: String::new(),
             cursor_pos: 0,
             font_height: None,
             placeholder: String::from("Input..."),
