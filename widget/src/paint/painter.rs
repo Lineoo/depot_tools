@@ -36,6 +36,9 @@ impl Painter {
     }
 
     pub fn text(&mut self, text: &str, x: u32, y: u32, font: Rc<RefCell<Font<'static>>>) {
+        if text.len() == 0 {
+            return;
+        }
         let r = font.borrow_mut().render(text).blended(self.color).unwrap();
         let rect = r.rect();
         self.canvas.copy(

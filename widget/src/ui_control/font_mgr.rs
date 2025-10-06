@@ -18,12 +18,9 @@ impl FontMgr {
     pub fn load_local_font(&mut self, path: &Path, size: u32) -> Result<(), sdl3::Error> {
         let font = self.ctx.borrow_mut().load_font(path, size as f32)?;
         let rc_font = Rc::new(RefCell::new(font));
-        let name: String = if path.ends_with(".ttf") {
-            path.file_name().unwrap().to_str().unwrap().to_string()
-        } else {
-            path.to_str().unwrap().to_string()
-        };
-        let mut family = self.fonts.entry(name).or_insert_with(HashMap::new);
+        let font_name = path.file_name().unwrap().to_str().unwrap();
+        let name = font_name.strip_suffix(".ttf").unwrap().to_string();
+        let family = self.fonts.entry(name).or_default();
         family.insert(size, rc_font);
         Ok(())
     }
