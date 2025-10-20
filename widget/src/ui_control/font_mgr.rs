@@ -5,6 +5,7 @@ use sdl3::ttf::{Font, Sdl3TtfContext};
 pub struct FontMgr {
     fonts: HashMap<String, HashMap<u32, Rc<RefCell<Font<'static>>>>>,
     ctx: Rc<RefCell<Sdl3TtfContext>>,
+    fc: fontconfig::Fontconfig,
 }
 
 impl FontMgr {
@@ -12,6 +13,7 @@ impl FontMgr {
         FontMgr {
             fonts: HashMap::new(),
             ctx,
+            fc: fontconfig::Fontconfig::new().unwrap(),
         }
     }
 
@@ -25,8 +27,19 @@ impl FontMgr {
         Ok(())
     }
 
-    pub fn load_system_font(&self, name: &str, size: f32) -> Result<(), String> {
-        todo!();
+    pub fn load_system_font(&mut self, name: &str, size: u32) -> Result<(), String> {
+        let font = self.fc.find(name, None);
+        if font.is_none() {
+            return Err(format!("Font '{}' not found", name));
+        }
+        let font_path = font.unwrap().path;
+        if self.load_local_font(&font_path, size).is_err() {
+            return Err(format!(
+                "Failed to load font '{}' from path {:?}",
+                name, font_path
+            ));
+        }
+        Ok(())
     }
 
     pub fn has_family(&self, name: &str) -> bool {

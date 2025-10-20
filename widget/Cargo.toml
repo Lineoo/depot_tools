@@ -6,7 +6,8 @@ edition.workspace = true
 [dependencies]
 log.workspace = true
 thiserror.workspace = true
-bytemuck = "1.23.2"
+bytemuck = "1.24.0"
+fontconfig = "0.10.0"
 global-hotkey = "0.7.0"
 pollster = "0.4.0"
 sdl3 = { version = "0.14.36", features = ["raw-window-handle", "ttf"] }
