@@ -1,7 +1,8 @@
-use std::{any::Any, panic};
+use std::{any::Any, num::NonZero, panic};
 
 use crate::{
     application::IdType,
+    event::win_init::WinInitEvent,
     paint::{painter::Painter, shapes::Rect},
     ui_control::ctrl_mgr::CtrlMgr,
 };
@@ -49,6 +50,8 @@ pub trait Control {
 
     fn get_children(&mut self); // add return type
     fn destroy_children(&mut self);
+
+    fn on_init(&mut self, event: &WinInitEvent);
 }
 
 pub trait Insertable: Control {
@@ -62,3 +65,51 @@ pub trait Eventful: Control {
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct AddChildErr(pub ());
+
+pub struct PhantomControl;
+
+impl Control for PhantomControl {
+    fn window_id(&self) -> Option<IdType> {
+        None
+    }
+
+    fn parent_id(&self) -> Option<IdType> {
+        None
+    }
+
+    fn id(&self) -> IdType {
+        NonZero::new(1).unwrap()
+    }
+
+    fn set_parent(&mut self, _parent: WeakHandle<dyn Control>) -> bool {
+        false
+    }
+
+    fn paint(&mut self, _painter: &mut Painter) {}
+
+    fn set_pos(&mut self, _x: u32, _y: u32) {}
+
+    fn set_size(&mut self, _width: u32, _height: u32) {}
+
+    fn pos(&self) -> (u32, u32) {
+        (0, 0)
+    }
+
+    fn size(&self) -> (u32, u32) {
+        (0, 0)
+    }
+
+    fn add_child(&mut self, _child: WeakHandle<dyn Control>) -> Result<IdType, ()> {
+        Err(())
+    }
+
+    fn remove_child(&mut self, _child: WeakHandle<dyn Control>) {}
+
+    fn remove_child_by_id(&mut self, _child_id: IdType) {}
+
+    fn get_children(&mut self) {}
+
+    fn destroy_children(&mut self) {}
+
+    fn on_init(&mut self, _event: &WinInitEvent) {}
+}

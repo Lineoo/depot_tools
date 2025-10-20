@@ -4,6 +4,7 @@ use smallvec::SmallVec;
 
 use crate::{
     application::IdType,
+    event::win_init::WinInitEvent,
     paint::{painter::Painter, shapes::Rect},
     ui_control::{
         control::{Control, Handle, WeakHandle},
@@ -161,6 +162,14 @@ impl Control for VBox {
 
     fn destroy_children(&mut self) {
         todo!()
+    }
+
+    fn on_init(&mut self, event: &WinInitEvent) {
+        for child in &self.children {
+            if let Some(mut ctrl) = child.ctrl.try_borrow_mut() {
+                ctrl.on_init(event);
+            }
+        }
     }
 }
 

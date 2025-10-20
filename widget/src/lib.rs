@@ -1,5 +1,6 @@
 pub mod application;
 // pub mod control;
+pub mod event;
 pub mod id_manager;
 pub mod paint;
 mod slot_handle;

@@ -36,7 +36,7 @@ pub struct Application {
     pub input_util: Rc<RefCell<TextInputUtil>>,
 
     // HashMap to store windows by their IDs
-    pub(crate) wins: Rc<RefCell<HashMap<u32, WindowDirector>>>,
+    pub(crate) wins: HashMap<u32, Rc<RefCell<WindowDirector>>>,
     pub(crate) controls: Rc<RefCell<CtrlMgr>>,
     // Global hotkey manager and a map to associate hotkeys with window IDs
     hotkey_mgr: Rc<RefCell<(GlobalHotKeyManager, HashMap<u32, u32>)>>,
@@ -68,7 +68,7 @@ impl Application {
             video_subsystem,
             ttf_ctx,
             input_util,
-            wins: Rc::new(RefCell::new(HashMap::new())),
+            wins: HashMap::new(),
             controls,
             hotkey_mgr: Rc::new(RefCell::new((
                 GlobalHotKeyManager::new().expect("Failed to create hotkey manager"),
@@ -96,7 +96,8 @@ impl Application {
     }
 
     pub fn reg_win(&mut self, win: WindowDirector) {
-        self.wins.borrow_mut().insert(win.get_win().get_id(), win);
+        self.wins
+            .insert(win.get_win().get_id(), Rc::new(RefCell::new(win)));
     }
 
     pub fn apply_control_id(&mut self) -> IdType {
@@ -117,12 +118,11 @@ impl Application {
 
     pub fn run(&mut self) {
         let mut event_pump = self.sdl_context.event_pump().unwrap();
-        let mut wins = self.wins.borrow_mut();
         'event_loop: loop {
             for event in event_pump.poll_iter() {
                 match event {
                     Event::Quit { .. } => {
-                        if wins.is_empty() {
+                        if self.wins.is_empty() {
                             break 'event_loop;
                         }
                     }
@@ -131,12 +131,16 @@ impl Application {
                         win_event: WindowEvent::CloseRequested,
                         ..
                     } => {
-                        let win = wins.get_mut(&window_id).unwrap();
+                        let result = self
+                            .wins
+                            .get_mut(&window_id)
+                            .unwrap()
+                            .borrow_mut()
+                            .call_strategy("close_requested");
                         if let Ok(WindowStrategy::Close(CloseStrategy::Close))
-                        | Err(WindowStrategyError::StrategyNotSet(..)) =
-                            win.call_strategy("close_requested")
+                        | Err(WindowStrategyError::StrategyNotSet(..)) = result
                         {
-                            wins.remove(&window_id);
+                            self.wins.remove(&window_id);
                         }
                         {}
                     }
@@ -145,11 +149,11 @@ impl Application {
                         win_event: WindowEvent::Minimized,
                         ..
                     } => {
-                        let win = wins.get_mut(&window_id).unwrap();
+                        let win = self.wins.get_mut(&window_id).unwrap();
                         if let Ok(WindowStrategy::Minimize(MinimizeStrategy::Minimize)) =
-                            win.call_strategy("minimize")
+                            win.borrow_mut().call_strategy("minimize")
                         {
-                            wins.get_mut(&window_id).unwrap().get_win_mut().minimize();
+                            win.borrow_mut().minimize();
                         }
                     }
                     Event::KeyDown {
@@ -161,7 +165,7 @@ impl Application {
                         window_id,
                         ..
                     } => {
-                        wins.remove(&window_id);
+                        self.wins.remove(&window_id);
                     }
                     Event::KeyDown {
                         window_id, keycode, ..
@@ -174,14 +178,14 @@ impl Application {
                     _ => {}
                 }
             }
-            for win in wins.values_mut() {
-                win.get_win_mut().paint(); // Call paint on each registered window
+            for win in self.wins.values_mut() {
+                win.borrow_mut().paint(); // Call paint on each registered window
             }
 
             if let Ok(event) = GlobalHotKeyEvent::receiver().try_recv() {
                 let hm = self.hotkey_mgr.borrow_mut();
-                let win = wins.get_mut(hm.1.get(&event.id).unwrap()).unwrap();
-                let _ = win.call_slot("hotkey", event.id);
+                let win = self.wins.get_mut(hm.1.get(&event.id).unwrap()).unwrap();
+                let _ = win.borrow_mut().call_slot("hotkey", event.id);
             }
 
             std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 60));

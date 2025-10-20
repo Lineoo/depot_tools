@@ -5,4 +5,5 @@ pub mod font_mgr;
 pub mod handle;
 pub mod input_box;
 pub mod list_widget;
+pub mod util;
 pub mod vbox;

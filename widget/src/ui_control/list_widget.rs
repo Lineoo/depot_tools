@@ -4,6 +4,7 @@ use sdl3::pixels::Color;
 
 use crate::{
     application::IdType,
+    event::win_init::WinInitEvent,
     paint::{painter::Painter, shapes::Rect},
     ui_control::{
         control::{Control, Handle, Insertable, WeakHandle},
@@ -139,6 +140,8 @@ impl Control for ListWidget {
     fn get_children(&mut self) {}
 
     fn destroy_children(&mut self) {}
+
+    fn on_init(&mut self, _event: &WinInitEvent) {}
 }
 
 impl Insertable for ListWidget {

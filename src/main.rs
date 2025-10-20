@@ -108,7 +108,7 @@ fn main() {
     let mut w = app.make_window("Test", 800, 600);
     w.no_decorations();
 
-    let ib = InputBox::create(app.ctrl_ctx().clone()).end();
+    let ib = InputBox::builder(app.ctrl_ctx().clone()).build();
     let lw = ListWidget::create(app.ctrl_ctx().clone());
     let vb = VBox::create(app.ctrl_ctx().clone());
 

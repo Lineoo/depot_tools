@@ -4,6 +4,7 @@ use sdl3::{keyboard::TextInputUtil, pixels::Color, ttf::Font};
 
 use crate::{
     application::IdType,
+    event::win_init::WinInitEvent,
     paint::{painter::Painter, shapes::Rect},
     ui_control::{
         control::{Control, Handle, WeakHandle},
@@ -29,7 +30,7 @@ pub struct InputBox {
 }
 
 impl InputBox {
-    pub fn create(ctrl_ctx: Rc<CtrlCtx>) -> InputBoxBuilder {
+    pub fn builder(ctrl_ctx: Rc<CtrlCtx>) -> InputBoxBuilder {
         let id = ctrl_ctx.id_mgr().borrow_mut().get_id();
         ctrl_ctx
             .font_mgr()
@@ -118,6 +119,10 @@ impl Control for InputBox {
     fn get_children(&mut self) {}
 
     fn destroy_children(&mut self) {}
+
+    fn on_init(&mut self, event: &WinInitEvent) {
+        todo!()
+    }
 }
 
 impl Drop for InputBox {
@@ -141,7 +146,7 @@ impl InputBoxBuilder {
         self
     }
 
-    pub fn end(self) -> Handle<InputBox> {
+    pub fn build(self) -> Handle<InputBox> {
         Handle::new(self.input_box)
     }
 }

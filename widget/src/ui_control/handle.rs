@@ -2,10 +2,10 @@ use std::{
     any::TypeId,
     marker::PhantomData,
     ops::{Deref, DerefMut},
-    ptr::drop_in_place,
+    ptr::{drop_in_place, null_mut},
 };
 
-use crate::ui_control::control::Control;
+use crate::ui_control::control::{Control, PhantomControl};
 
 struct HandleInner<T: Control + ?Sized = dyn Control> {
     strong: usize,
@@ -78,6 +78,27 @@ impl<T: Control + ?Sized> WeakHandle<T> {
     }
 }
 
+impl<T: Control + ?Sized + 'static> WeakHandle<T> {
+    pub fn new() -> Self {
+        WeakHandle {
+            inner: Box::into_raw(Box::new(HandleInner {
+                strong: 0,
+                weak: 1,
+                borrow: 0,
+                data: null_mut::<PhantomControl>() as *mut dyn Control,
+                real: TypeId::of::<T>(),
+                _marker: PhantomData::<T>,
+            })),
+        }
+    }
+}
+
+impl<T: Control + ?Sized + 'static> Default for WeakHandle<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 // functions below only apply to concrete type
 
 impl<T: Control + 'static> Handle<T> {
@@ -118,6 +139,22 @@ impl<T: Control + ?Sized> Handle<T> {
         unsafe { assert!((*self.inner).borrow == 0, "handle is borrowed") };
         unsafe { (*self.inner).borrow -= 1 };
         RefMut { owner: self }
+    }
+
+    pub fn try_borrow(&self) -> Option<Ref<'_, T>> {
+        if unsafe { (*self.inner).borrow < 0 } {
+            return None;
+        }
+        unsafe { (*self.inner).borrow += 1 };
+        Some(Ref { owner: self })
+    }
+
+    pub fn try_borrow_mut(&self) -> Option<RefMut<'_, T>> {
+        if unsafe { (*self.inner).borrow != 0 } {
+            return None;
+        }
+        unsafe { (*self.inner).borrow -= 1 };
+        Some(RefMut { owner: self })
     }
 }
 

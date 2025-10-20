@@ -8,6 +8,7 @@ use std::{
 
 use crate::{
     application::IdType,
+    event::win_init::WinInitEvent,
     paint::{painter::Painter, shapes::Rect},
     ui_control::control::{Control, WeakHandle},
 };
@@ -31,7 +32,6 @@ pub struct Window {
     id_mgr: Rc<RefCell<IdManager>>,
     ttf_ctx: Rc<RefCell<ttf::Sdl3TtfContext>>,
     userdata: Option<Box<dyn Any>>,
-    font: Option<ttf::Font<'static>>,
     input_util: Rc<RefCell<TextInputUtil>>,
 
     child: Option<WeakHandle<dyn Control>>,
@@ -45,9 +45,6 @@ impl Window {
         ttf_ctx: Rc<RefCell<sdl3::ttf::Sdl3TtfContext>>,
         input_util: Rc<RefCell<TextInputUtil>>,
     ) -> Self {
-        let font = ttf_ctx
-            .borrow_mut()
-            .load_font("./FiraCode-Regular.ttf", 26.0);
         let id = id_mgr.borrow_mut().get_id();
         let cvs = win.into_canvas();
         let texture_creator = Rc::new(RefCell::new(cvs.texture_creator()));
@@ -60,10 +57,13 @@ impl Window {
             id_mgr,
             ttf_ctx,
             userdata: None,
-            font: font.ok(),
             input_util,
             child: None,
         }
+    }
+
+    pub fn init(&mut self, event: WinInitEvent) {
+        todo!()
     }
 
     pub fn no_decorations(&mut self) {
