@@ -5,6 +5,7 @@ pub mod entry;
 pub mod entryspace;
 pub mod stack;
 pub mod implement;
+pub mod lua;
 mod search;
 pub mod dylib;
 

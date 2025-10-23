@@ -1,9 +1,9 @@
-use std::{process::Command, str::FromStr, sync::Arc};
+use std::{error::Error, path::Path, process::Command, str::FromStr, sync::Arc};
 
 use hashbrown::HashMap;
 use log::*;
 
-use crate::{dylib::DylibEntry, entry::*, search::SearchEngine};
+use crate::{dylib::DylibEntry, entry::*, lua::LuaEntry, search::SearchEngine};
 
 type Ident = u64;
 
@@ -136,7 +136,7 @@ impl EntrySpace {
                     if let Some(path) = each.get("path").and_then(|x| x.as_str()) {
                         // loading lib
                         let path = path.to_string();
-                        let action = move || -> Result<BoxedEntry, Box<dyn std::error::Error>> {
+                        let action = move || -> Result<BoxedEntry, Box<dyn Error>> {
                             use libloading::*;
 
                             // TODO: User Confirmation
@@ -166,19 +166,15 @@ impl EntrySpace {
                     if let Some(path) = each.get("path").and_then(|x| x.as_str()) {
                         // loading lib
                         let path = path.to_string();
-
-                        let action = move || -> Result<BoxedEntry, Box<dyn std::error::Error>> {
-                            // TODO: User Confirmation
-                            // TODO: Share lua Vms
-                            let vm = mlua::Lua::new();
-                            vm.load("").exec();
-
-                            todo!()
+                        let action = move || -> Result<BoxedEntry, Box<dyn Error>> {
+                            let path = Path::new(&path);
+                            let script = LuaEntry::from_script_file(path)?;
+                            Ok(Box::new(script))
                         };
                         // error handing
                         let action = move || match action() {
                             Ok(entry) => entry,
-                            Err(e) => Box::new(e.to_string()),
+                            Err(e) => Box::new(e.to_string())
                         };
                         let action = Arc::new(action);
                         raise = action.clone();
