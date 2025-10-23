@@ -1,7 +1,4 @@
-mod backend;
-
 use widget::{
-    Keycode,
     application::Application,
     control::{
         Control,
@@ -9,9 +6,6 @@ use widget::{
         list_widget::ListWidget,
         vbox::{InsertPosition, VBox},
     },
-    global_hotkey::hotkey::{Code, HotKey, Modifiers},
-    paint::shapes::Rect,
-    window::win_strategy::{CloseStrategy, MinimizeStrategy, WindowStrategy},
 };
 
 fn main_old() {
