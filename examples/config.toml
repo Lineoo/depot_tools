@@ -54,3 +54,7 @@ title = "Neovim"
 description = "Open Neovim."
 crate-type = "shell"
 exec = "nvim"
+
+[[entry]]
+name = "lua"
+path = "lua_example.lua"
