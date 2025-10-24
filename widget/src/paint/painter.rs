@@ -1,7 +1,7 @@
 use std::{cell::RefCell, rc::Rc};
 
 use sdl3::{
-    pixels::{Color, PixelFormatEnum},
+    pixels::{Color, PixelFormat},
     rect::Rect as SdlRect,
     render::{Canvas, TextureCreator},
     surface::Surface,
@@ -20,7 +20,7 @@ pub struct Painter {
 
 impl Painter {
     pub fn new(size: (u32, u32), creator: Rc<RefCell<TextureCreator<WindowContext>>>) -> Self {
-        let surface = Surface::new(size.0, size.1, PixelFormatEnum::RGBA8888.into())
+        let surface = Surface::new(size.0, size.1, PixelFormat::RGBA8888.into())
             .expect("Could not create surface");
         Painter {
             canvas: surface.into_canvas().expect("Could not create canvas"),
@@ -67,7 +67,7 @@ impl Painter {
         let creator = self.creator.borrow_mut();
         let texture = creator
             .create_texture(
-                Some(PixelFormatEnum::RGBA8888.into()),
+                Some(PixelFormat::RGBA8888.into()),
                 sdl3::render::TextureAccess::Static,
                 source.size.0,
                 source.size.1,
