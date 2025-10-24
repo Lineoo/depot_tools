@@ -10,6 +10,7 @@ use crate::id_manager::IdManager;
 use crate::ui_control::ctrl_ctx::CtrlCtx;
 use crate::ui_control::ctrl_mgr::{CtrlMgr, make_ctrl_ctx};
 use crate::ui_control::font_mgr::FontMgr;
+use crate::ui_control::util::text_edit;
 use crate::window::WindowStrategyError;
 use crate::window::{
     Window, WindowDirector,
@@ -24,7 +25,8 @@ use sdl3::{
     keyboard::Keycode,
 };
 use std::num::NonZero;
-use std::{cell::RefCell, collections::HashMap, rc::Rc, time::Duration};
+use std::rc::{Rc, Weak};
+use std::{cell::RefCell, collections::HashMap, time::Duration};
 
 pub type IdType = NonZero<u64>;
 
@@ -44,6 +46,8 @@ pub struct Application {
     // ID manager for generating unique IDs for controls
     id_mgr: Rc<RefCell<IdManager>>,
     ctrl_ctx: Rc<CtrlCtx>,
+
+    pub(crate) active_text_edit: Rc<RefCell<Option<Weak<RefCell<text_edit::TextEdit>>>>>,
 }
 
 impl Application {
@@ -58,10 +62,12 @@ impl Application {
         let input_util = Rc::new(RefCell::new(video_subsystem.text_input()));
         let id_mgr = Rc::new(RefCell::new(IdManager::new()));
         let controls = Rc::new(RefCell::new(CtrlMgr::new()));
+        let active_text_edit = Rc::new(RefCell::new(None));
         let ctrl_ctx = Rc::new(make_ctrl_ctx(
             id_mgr.clone(),
             controls.clone(),
             Rc::new(RefCell::new(FontMgr::new(ttf_ctx.clone()))),
+            active_text_edit.clone(),
         ));
         Application {
             sdl_context,
@@ -76,6 +82,7 @@ impl Application {
             ))),
             id_mgr,
             ctrl_ctx,
+            active_text_edit,
         }
     }
 

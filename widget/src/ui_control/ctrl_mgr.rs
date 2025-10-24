@@ -1,4 +1,8 @@
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use std::{
+    cell::RefCell,
+    collections::HashMap,
+    rc::{Rc, Weak},
+};
 
 use crate::{
     application::IdType,
@@ -7,6 +11,7 @@ use crate::{
         control::{Control, Handle, Insertable},
         ctrl_ctx::CtrlCtx,
         font_mgr::FontMgr,
+        util::text_edit,
     },
 };
 
@@ -43,6 +48,7 @@ pub(crate) fn make_ctrl_ctx(
     id_mgr: Rc<RefCell<IdManager>>,
     ctrl_mgr: Rc<RefCell<CtrlMgr>>,
     font_mgr: Rc<RefCell<FontMgr>>,
+    active_text_edit: Rc<RefCell<Option<Weak<RefCell<text_edit::TextEdit>>>>>,
 ) -> CtrlCtx {
-    CtrlCtx::new(id_mgr, ctrl_mgr, font_mgr)
+    CtrlCtx::new(id_mgr, ctrl_mgr, font_mgr, active_text_edit)
 }
