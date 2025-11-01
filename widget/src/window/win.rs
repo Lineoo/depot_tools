@@ -30,7 +30,6 @@ pub struct Window {
     hotkeys: HashSet<HotKey>,
     id: IdType,
     id_mgr: Rc<RefCell<IdManager>>,
-    ttf_ctx: Rc<RefCell<ttf::Sdl3TtfContext>>,
     userdata: Option<Box<dyn Any>>,
     input_util: Rc<RefCell<TextInputUtil>>,
 
@@ -42,7 +41,6 @@ impl Window {
         win: SdlWindow,
         hotkey_manager: Rc<RefCell<(GlobalHotKeyManager, HashMap<u32, u32>)>>,
         id_mgr: Rc<RefCell<IdManager>>,
-        ttf_ctx: Rc<RefCell<sdl3::ttf::Sdl3TtfContext>>,
         input_util: Rc<RefCell<TextInputUtil>>,
     ) -> Self {
         let id = id_mgr.borrow_mut().get_id();
@@ -55,7 +53,6 @@ impl Window {
             hotkeys: HashSet::new(),
             id,
             id_mgr,
-            ttf_ctx,
             userdata: None,
             input_util,
             child: None,

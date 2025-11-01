@@ -1,10 +1,12 @@
 use std::{
     cell::RefCell,
-    ffi::CString,
-    ptr::null,
     rc::{Rc, Weak},
 };
 
+use cosmic_text::{
+    Font as CosmicFont,
+    rustybuzz::{self, UnicodeBuffer},
+};
 use sdl3::{
     event::Event::{self as SdlEvent, TextEditing as SdlTextEditing, TextInput as SdlTextInput},
     keyboard::TextInputUtil,
@@ -161,7 +163,7 @@ pub struct TextEdit {
     geometry: (u32, u32, u32, u32),
     cursor_offset: i32,
     color: Color,
-    font: Option<Rc<RefCell<sdl3::ttf::Font<'static>>>>,
+    font: Option<Rc<RefCell<CosmicFont>>>,
 
     click_start_pos: Option<(u32, u32)>,
     is_dragging: bool,
@@ -293,7 +295,28 @@ impl TextEdit {
     }
 
     fn text_pos_at(&self, x: u32) -> usize {
-        todo!()
+        let mut buffer = UnicodeBuffer::new();
+        buffer.push_str(self.text());
+        let pos_vec = rustybuzz::shape(
+            self.font.as_ref().unwrap().borrow().rustybuzz(),
+            &[],
+            buffer,
+        )
+        .glyph_positions()
+        .iter()
+        .map(|pos| (pos.x_offset + pos.x_advance / 2) as u32)
+        .collect::<Vec<_>>();
+        if pos_vec[pos_vec.len() - 1] <= x {
+            return pos_vec.len();
+        } else if pos_vec[0] >= x {
+            return 0;
+        }
+        let idx = pos_vec.iter().position(|p| *p > x).unwrap(); // TODO: binary search
+        if pos_vec[idx] - x > x - pos_vec[idx - 1] {
+            idx - 1
+        } else {
+            idx
+        }
     }
 }
 

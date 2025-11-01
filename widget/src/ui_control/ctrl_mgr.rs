@@ -10,7 +10,7 @@ use crate::{
     ui_control::{
         control::{Control, Handle, Insertable},
         ctrl_ctx::CtrlCtx,
-        font_mgr::FontMgr,
+        font::FontMgr,
         util::text_edit,
     },
 };

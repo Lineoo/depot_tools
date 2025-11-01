@@ -5,7 +5,7 @@ use std::{
 
 use crate::{
     id_manager::IdManager,
-    ui_control::{ctrl_mgr::CtrlMgr, font_mgr::FontMgr, util::text_edit},
+    ui_control::{ctrl_mgr::CtrlMgr, font::FontMgr, util::text_edit},
 };
 
 pub struct CtrlCtx {

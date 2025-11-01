@@ -9,7 +9,7 @@
 use crate::id_manager::IdManager;
 use crate::ui_control::ctrl_ctx::CtrlCtx;
 use crate::ui_control::ctrl_mgr::{CtrlMgr, make_ctrl_ctx};
-use crate::ui_control::font_mgr::FontMgr;
+use crate::ui_control::font::FontMgr;
 use crate::ui_control::util::text_edit;
 use crate::window::WindowStrategyError;
 use crate::window::{
@@ -34,7 +34,6 @@ pub struct Application {
     // SDL context and video subsystem
     sdl_context: Sdl,
     video_subsystem: VideoSubsystem,
-    ttf_ctx: Rc<RefCell<Sdl3TtfContext>>,
     pub input_util: Rc<RefCell<TextInputUtil>>,
 
     // HashMap to store windows by their IDs
@@ -66,13 +65,12 @@ impl Application {
         let ctrl_ctx = Rc::new(make_ctrl_ctx(
             id_mgr.clone(),
             controls.clone(),
-            Rc::new(RefCell::new(FontMgr::new(ttf_ctx.clone()))),
+            Rc::new(RefCell::new(FontMgr::new().unwrap())),
             active_text_edit.clone(),
         ));
         Application {
             sdl_context,
             video_subsystem,
-            ttf_ctx,
             input_util,
             wins: HashMap::new(),
             controls,
@@ -95,7 +93,6 @@ impl Application {
                     .expect("Failed to create window"),
                 self.hotkey_mgr.clone(),
                 self.get_id_mgr(),
-                self.ttf_ctx.clone(),
                 self.input_util.clone(),
             ),
             HashMap::new(),
