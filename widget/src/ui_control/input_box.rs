@@ -1,6 +1,6 @@
 use std::{cell::RefCell, path::Path, rc::Rc};
 
-use sdl3::{keyboard::TextInputUtil, pixels::Color, ttf::Font};
+use sdl3::{keyboard::TextInputUtil, pixels::Color};
 
 use crate::{
     application::IdType,
@@ -9,6 +9,7 @@ use crate::{
     ui_control::{
         control::{Control, Handle, WeakHandle},
         ctrl_ctx::CtrlCtx,
+        font::Font,
     },
 };
 
@@ -18,7 +19,7 @@ pub struct InputBox {
     win_id: Option<IdType>,
     geometry: Rect,
     ctrl_ctx: Rc<CtrlCtx>,
-    font: Rc<RefCell<Font<'static>>>,
+    font: Rc<RefCell<Font>>,
     this: Option<WeakHandle<Self>>,
 
     text: String,
@@ -35,18 +36,20 @@ impl InputBox {
         ctrl_ctx
             .font_mgr()
             .borrow_mut()
-            .load_local_font(Path::new("FiraCode-Regular.ttf"), 22);
+            .load_local_family("FiraCode-Regular.ttf");
         let r = InputBox {
             id,
             parent_id: None,
             win_id: None,
             geometry: Rect::new(0, 0, 100, 30),
             ctrl_ctx: ctrl_ctx.clone(),
-            font: ctrl_ctx
-                .font_mgr()
-                .borrow()
-                .get_font("FiraCode-Regular", 22)
-                .unwrap(),
+            font: Rc::new(RefCell::new(
+                ctrl_ctx
+                    .font_mgr()
+                    .borrow()
+                    .get_font("FiraCode-Regular", 22)
+                    .unwrap(),
+            )),
             this: None,
             text: String::new(),
             cursor_pos: 0,

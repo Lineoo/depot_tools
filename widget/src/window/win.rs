@@ -10,7 +10,10 @@ use crate::{
     application::IdType,
     event::win_init::WinInitEvent,
     paint::{painter::Painter, shapes::Rect},
-    ui_control::control::{Control, WeakHandle},
+    ui_control::{
+        control::{Control, WeakHandle},
+        font::FontMgr,
+    },
 };
 use crate::{id_manager::IdManager, window::win_strategy::*};
 use global_hotkey::{GlobalHotKeyManager, hotkey::HotKey};
@@ -26,6 +29,7 @@ use thiserror::Error;
 pub struct Window {
     pub cvs: WindowCanvas,
     texture_creator: Rc<RefCell<TextureCreator<WindowContext>>>,
+    font_mgr: Rc<RefCell<FontMgr>>,
     hotkey_manager: Rc<RefCell<(GlobalHotKeyManager, HashMap<u32, u32>)>>,
     hotkeys: HashSet<HotKey>,
     id: IdType,
@@ -42,6 +46,7 @@ impl Window {
         hotkey_manager: Rc<RefCell<(GlobalHotKeyManager, HashMap<u32, u32>)>>,
         id_mgr: Rc<RefCell<IdManager>>,
         input_util: Rc<RefCell<TextInputUtil>>,
+        font_mgr: Rc<RefCell<FontMgr>>,
     ) -> Self {
         let id = id_mgr.borrow_mut().get_id();
         let cvs = win.into_canvas();
@@ -49,6 +54,7 @@ impl Window {
         Window {
             cvs,
             texture_creator,
+            font_mgr,
             hotkey_manager,
             hotkeys: HashSet::new(),
             id,
@@ -99,7 +105,11 @@ impl Window {
         //     }
         // }
         // self.cvs.present();
-        let mut p = Painter::new(self.cvs.window().size(), self.texture_creator.clone());
+        let mut p = Painter::new(
+            self.cvs.window().size(),
+            self.texture_creator.clone(),
+            self.font_mgr.clone(),
+        );
         if let Some(child) = &self.child
             && let Some(child) = child.upgrade()
         {

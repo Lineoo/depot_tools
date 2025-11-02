@@ -15,7 +15,14 @@ use sdl3::{
     ttf::Font as SdlFont,
 };
 
-use crate::{paint::painter::Painter, ui_control::ctrl_ctx::CtrlCtx, window::Window};
+use crate::{
+    paint::painter::Painter,
+    ui_control::{
+        ctrl_ctx::CtrlCtx,
+        font::{Font, FontMgr},
+    },
+    window::Window,
+};
 
 #[derive(Clone, Debug, Default)]
 struct InputArea {
@@ -163,14 +170,15 @@ pub struct TextEdit {
     geometry: (u32, u32, u32, u32),
     cursor_offset: i32,
     color: Color,
-    font: Option<Rc<RefCell<CosmicFont>>>,
+    font: Option<Rc<RefCell<Font>>>,
+    font_mgr: Rc<RefCell<FontMgr>>,
 
     click_start_pos: Option<(u32, u32)>,
     is_dragging: bool,
 }
 
 impl TextEdit {
-    pub fn new(input_util: Rc<RefCell<TextInputUtil>>, ctrl_ctx: CtrlCtx) -> Self {
+    pub fn new(input_util: Rc<RefCell<TextInputUtil>>, ctrl_ctx: &CtrlCtx) -> Self {
         TextEdit {
             input_util,
             win: Weak::new(),
@@ -179,6 +187,7 @@ impl TextEdit {
             cursor_offset: 0,
             color: Color::BLACK,
             font: None,
+            font_mgr: ctrl_ctx.font_mgr().clone(),
 
             click_start_pos: None,
             is_dragging: false,
@@ -258,7 +267,7 @@ impl TextEdit {
         // TODO: render cursor, selection, composition
     }
 
-    pub fn set_font(&mut self, font: Rc<RefCell<SdlFont<'static>>>) {
+    pub fn set_font(&mut self, font: Rc<RefCell<Font>>) {
         self.font = Some(font);
     }
 
@@ -298,7 +307,7 @@ impl TextEdit {
         let mut buffer = UnicodeBuffer::new();
         buffer.push_str(self.text());
         let pos_vec = rustybuzz::shape(
-            self.font.as_ref().unwrap().borrow().rustybuzz(),
+            self.font.as_ref().unwrap().borrow().data.rustybuzz(),
             &[],
             buffer,
         )

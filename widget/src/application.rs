@@ -94,6 +94,7 @@ impl Application {
                 self.hotkey_mgr.clone(),
                 self.get_id_mgr(),
                 self.input_util.clone(),
+                self.ctrl_ctx.font_mgr(),
             ),
             HashMap::new(),
         )

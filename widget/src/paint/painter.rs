@@ -1,25 +1,33 @@
 use std::{cell::RefCell, rc::Rc};
 
+use cosmic_text::{Buffer as CosmicBuffer, Metrics as CosmicMetrics};
 use sdl3::{
     pixels::{Color, PixelFormat},
     rect::Rect as SdlRect,
     render::{Canvas, TextureCreator},
     surface::Surface,
-    ttf::Font,
     video::WindowContext,
 };
 
-use crate::paint::shapes::Rect;
+use crate::{
+    paint::shapes::Rect,
+    ui_control::font::{Font, FontMgr},
+};
 
 pub struct Painter {
     pub(crate) canvas: Canvas<Surface<'static>>,
     creator: Rc<RefCell<TextureCreator<WindowContext>>>,
     size: (u32, u32),
     color: Color,
+    font_mgr: Rc<RefCell<FontMgr>>,
 }
 
 impl Painter {
-    pub fn new(size: (u32, u32), creator: Rc<RefCell<TextureCreator<WindowContext>>>) -> Self {
+    pub fn new(
+        size: (u32, u32),
+        creator: Rc<RefCell<TextureCreator<WindowContext>>>,
+        font_mgr: Rc<RefCell<FontMgr>>,
+    ) -> Self {
         let surface = Surface::new(size.0, size.1, PixelFormat::RGBA8888.into())
             .expect("Could not create surface");
         Painter {
@@ -27,6 +35,7 @@ impl Painter {
             creator,
             size,
             color: Color::WHITE,
+            font_mgr,
         }
     }
 
@@ -35,22 +44,14 @@ impl Painter {
         self.canvas.fill_rect(Some(rect.into()));
     }
 
-    pub fn text(&mut self, text: &str, x: u32, y: u32, font: Rc<RefCell<Font<'static>>>) {
+    pub fn text(&mut self, text: &str, x: u32, y: u32, font: Rc<RefCell<Font>>) {
         if text.len() == 0 {
             return;
         }
-        let r = font.borrow_mut().render(text).blended(self.color).unwrap();
-        let rect = r.rect();
-        self.canvas.copy(
-            &r.as_texture(&self.canvas.texture_creator()).unwrap(),
-            rect,
-            SdlRect::new(
-                x.try_into().unwrap(),
-                y.try_into().unwrap(),
-                rect.width(),
-                rect.height(),
-            ),
-        );
+        let metrics = CosmicMetrics::new(14.0, 20.0);
+        let mut buffer = CosmicBuffer::new(&mut self.font_mgr.borrow_mut().ctx.fs, metrics);
+        let mut buffer = buffer.borrow_with(&mut self.font_mgr.borrow_mut().ctx.fs);
+        todo!()
     }
 
     pub fn set_color(&mut self, color: Color) {
@@ -58,8 +59,6 @@ impl Painter {
         self.canvas.set_draw_color(color);
         self.color = color;
     }
-
-    pub fn set_font_size(&mut self, w: f32, h: f32) {}
 
     pub fn copy(&mut self, source: Painter, source_area: Rect, dest_area: Rect) {
         let source_area: SdlRect = source_area.try_into().unwrap();
