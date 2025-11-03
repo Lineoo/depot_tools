@@ -1,6 +1,6 @@
 use std::{cell::RefCell, rc::Rc};
 
-use cosmic_text::{Buffer as CosmicBuffer, Metrics as CosmicMetrics};
+use cosmic_text::{Attrs, Buffer as CosmicBuffer, Color as CosmicColor, Metrics as CosmicMetrics};
 use sdl3::{
     pixels::{Color, PixelFormat},
     rect::Rect as SdlRect,
@@ -48,10 +48,30 @@ impl Painter {
         if text.len() == 0 {
             return;
         }
+        let font_mgr = self.font_mgr.borrow();
+        let mut fs = font_mgr.ctx.fs.borrow_mut();
         let metrics = CosmicMetrics::new(14.0, 20.0);
-        let mut buffer = CosmicBuffer::new(&mut self.font_mgr.borrow_mut().ctx.fs, metrics);
-        let mut buffer = buffer.borrow_with(&mut self.font_mgr.borrow_mut().ctx.fs);
-        todo!()
+        let mut buffer = CosmicBuffer::new(&mut fs, metrics);
+        let mut buffer = buffer.borrow_with(&mut fs);
+        let attrs = Attrs::new();
+        buffer.set_text(text, &attrs, cosmic_text::Shaping::Advanced);
+        let Color { r, g, b, a } = self.color;
+        let text_color = CosmicColor::rgba(r, g, b, a);
+
+        buffer.draw(
+            &mut font_mgr.ctx.sc.borrow_mut(),
+            text_color,
+            |xx, yy, ww, hh, color| {
+                self.canvas.set_draw_color(Color {
+                    r: color.r(),
+                    g: color.g(),
+                    b: color.b(),
+                    a: color.a(),
+                });
+                let rect = SdlRect::new(x as i32 + xx, y as i32 + yy, ww, hh);
+                self.canvas.fill_rect(Some(rect.into()));
+            },
+        );
     }
 
     pub fn set_color(&mut self, color: Color) {

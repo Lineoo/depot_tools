@@ -16,8 +16,8 @@ pub enum DefaultFamily {
 }
 
 pub(crate) struct CosmicContext {
-    pub(crate) fs: FontSystem,
-    pub(crate) sc: SwashCache,
+    pub(crate) fs: Rc<RefCell<FontSystem>>,
+    pub(crate) sc: Rc<RefCell<SwashCache>>,
 }
 
 pub struct FontMgr {
@@ -30,14 +30,14 @@ impl FontMgr {
         Some(Self {
             fc: Fontconfig::new()?,
             ctx: CosmicContext {
-                fs: FontSystem::new(),
-                sc: SwashCache::new(),
+                fs: Rc::new(RefCell::new(FontSystem::new())),
+                sc: Rc::new(RefCell::new(SwashCache::new())),
             },
         })
     }
 
     pub fn load_local_family(&mut self, name: &str) -> Result<(), FontFamilyNotExist> {
-        if let Err(err) = self.ctx.fs.db_mut().load_font_file(name) {
+        if let Err(err) = self.ctx.fs.borrow_mut().db_mut().load_font_file(name) {
             return Err(FontFamilyNotExist);
         } else {
             Err(FontFamilyNotExist)
@@ -57,14 +57,14 @@ impl FontMgr {
     }
 
     pub fn get_font(&self, name: &str, weight: u16) -> Option<Font> {
-        let id = self.ctx.fs.db().query(&Query {
+        let id = self.ctx.fs.borrow().db().query(&Query {
             families: &[Family::Name(name)],
             weight: Weight(weight),
             stretch: Stretch::Normal,
             style: Style::Normal,
         })?;
         Some(Font {
-            data: CosmicFont::new(self.ctx.fs.db(), id)?,
+            data: CosmicFont::new(self.ctx.fs.borrow().db(), id)?,
         })
     }
 }
