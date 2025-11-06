@@ -2,6 +2,7 @@ use std::{
     cell::RefCell,
     collections::HashMap,
     rc::{Rc, Weak},
+    sync::{Arc, Mutex},
 };
 
 use crate::{
@@ -11,7 +12,7 @@ use crate::{
         control::{Control, Handle, Insertable},
         ctrl_ctx::CtrlCtx,
         font::FontMgr,
-        util::text_edit,
+        util::{focus_mgr::FocusMgr, text_edit},
     },
 };
 
@@ -48,7 +49,7 @@ pub(crate) fn make_ctrl_ctx(
     id_mgr: Rc<RefCell<IdManager>>,
     ctrl_mgr: Rc<RefCell<CtrlMgr>>,
     font_mgr: Rc<RefCell<FontMgr>>,
-    active_text_edit: Rc<RefCell<Option<Weak<RefCell<text_edit::TextEdit>>>>>,
+    focus_mgr: Arc<Mutex<FocusMgr>>,
 ) -> CtrlCtx {
-    CtrlCtx::new(id_mgr, ctrl_mgr, font_mgr, active_text_edit)
+    CtrlCtx::new(id_mgr, ctrl_mgr, font_mgr, focus_mgr)
 }

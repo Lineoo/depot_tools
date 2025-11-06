@@ -1,18 +1,23 @@
 use std::{
     cell::RefCell,
     rc::{Rc, Weak},
+    sync::{Arc, Mutex},
 };
 
 use crate::{
     id_manager::IdManager,
-    ui_control::{ctrl_mgr::CtrlMgr, font::FontMgr, util::text_edit},
+    ui_control::{
+        ctrl_mgr::CtrlMgr,
+        font::FontMgr,
+        util::{focus_mgr::FocusMgr, text_edit},
+    },
 };
 
 pub struct CtrlCtx {
     id_mgr: Rc<RefCell<IdManager>>,
     ctrl_mgr: Rc<RefCell<CtrlMgr>>,
     font_mgr: Rc<RefCell<FontMgr>>,
-    active_text_edit: Rc<RefCell<Option<Weak<RefCell<text_edit::TextEdit>>>>>,
+    focus_mgr: Arc<Mutex<FocusMgr>>,
 }
 
 impl CtrlCtx {
@@ -20,13 +25,13 @@ impl CtrlCtx {
         id_mgr: Rc<RefCell<IdManager>>,
         ctrl_mgr: Rc<RefCell<CtrlMgr>>,
         font_mgr: Rc<RefCell<FontMgr>>,
-        active_text_edit: Rc<RefCell<Option<Weak<RefCell<text_edit::TextEdit>>>>>,
+        focus_mgr: Arc<Mutex<FocusMgr>>,
     ) -> Self {
         CtrlCtx {
             id_mgr,
             ctrl_mgr,
             font_mgr,
-            active_text_edit,
+            focus_mgr,
         }
     }
 
@@ -40,11 +45,5 @@ impl CtrlCtx {
 
     pub fn font_mgr(&self) -> Rc<RefCell<FontMgr>> {
         self.font_mgr.clone()
-    }
-
-    pub(crate) fn active_text_edit(
-        &self,
-    ) -> Rc<RefCell<Option<Weak<RefCell<text_edit::TextEdit>>>>> {
-        self.active_text_edit.clone()
     }
 }
