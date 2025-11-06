@@ -1,5 +1,6 @@
 use std::{collections::LinkedList, fmt::Debug, rc::Rc};
 
+use anyhow::Error;
 use sdl3::pixels::Color;
 
 use crate::{
@@ -129,8 +130,8 @@ impl Control for ListWidget {
         self.geometry
     }
 
-    fn add_child(&mut self, child: WeakHandle<dyn Control>) -> Result<IdType, ()> {
-        Err(())
+    fn add_child(&mut self, child: WeakHandle<dyn Control>) -> anyhow::Result<IdType> {
+        Err(Error::msg("ListWidget cannot have children"))
     }
 
     fn remove_child(&mut self, child: WeakHandle<dyn Control>) {}

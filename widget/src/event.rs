@@ -15,3 +15,8 @@ pub enum EventType {
     Bubble,
     Tunnel,
 }
+
+pub enum SysEvent {
+    WinInit(win_init::WinInitEvent),
+    Input(),
+}

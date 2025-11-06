@@ -1,8 +1,10 @@
 use std::{any::Any, num::NonZero, panic};
 
+use anyhow::Error;
+
 use crate::{
     application::IdType,
-    event::win_init::WinInitEvent,
+    event::{SysEvent, win_init::WinInitEvent},
     paint::{painter::Painter, shapes::Rect},
     ui_control::ctrl_mgr::CtrlMgr,
 };
@@ -10,6 +12,8 @@ use crate::{
 pub type Handle<T> = crate::ui_control::handle::Handle<T>;
 pub type WeakHandle<T> = crate::ui_control::handle::WeakHandle<T>;
 pub type EventArg = Option<Box<dyn Any>>;
+
+pub type EventProc = Box<dyn FnMut(String, WeakHandle<dyn Control>, WeakHandle<dyn Control>)>; // name, provider, receiver
 
 pub trait Control {
     fn window_id(&self) -> Option<IdType>;
@@ -37,14 +41,19 @@ pub trait Control {
         Rect { x, y, w, h }
     }
 
-    fn subscribe(&mut self, _event: String, _provider: WeakHandle<dyn Control>) -> bool {
+    fn subscribe(
+        &mut self,
+        _event: String,
+        _provider: WeakHandle<dyn Control>,
+        _proc: EventProc,
+    ) -> bool {
         panic!("Not implemented");
     }
 
     // fn on_event(&mut self, event: String, arg: EventArg);
 
     /// true on success and false on failure
-    fn add_child(&mut self, child: WeakHandle<dyn Control>) -> Result<IdType, ()>;
+    fn add_child(&mut self, child: WeakHandle<dyn Control>) -> anyhow::Result<IdType>;
     fn remove_child(&mut self, child: WeakHandle<dyn Control>);
     fn remove_child_by_id(&mut self, child_id: IdType);
 
@@ -52,6 +61,8 @@ pub trait Control {
     fn destroy_children(&mut self);
 
     fn on_init(&mut self, event: &WinInitEvent);
+
+    fn receive_sys_event(&mut self, _event: SysEvent) {}
 }
 
 pub trait Insertable: Control {
@@ -99,8 +110,8 @@ impl Control for PhantomControl {
         (0, 0)
     }
 
-    fn add_child(&mut self, _child: WeakHandle<dyn Control>) -> Result<IdType, ()> {
-        Err(())
+    fn add_child(&mut self, _child: WeakHandle<dyn Control>) -> anyhow::Result<IdType> {
+        Err(Error::msg("Phantom control does not have an id!"))
     }
 
     fn remove_child(&mut self, _child: WeakHandle<dyn Control>) {}

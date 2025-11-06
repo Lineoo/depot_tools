@@ -144,7 +144,7 @@ impl Control for VBox {
         self.geometry
     }
 
-    fn add_child(&mut self, child: WeakHandle<dyn Control>) -> Result<IdType, ()> {
+    fn add_child(&mut self, child: WeakHandle<dyn Control>) -> anyhow::Result<IdType> {
         todo!()
     }
 

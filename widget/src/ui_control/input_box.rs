@@ -1,5 +1,6 @@
 use std::{cell::RefCell, path::Path, rc::Rc};
 
+use anyhow::Error;
 use sdl3::{keyboard::TextInputUtil, pixels::Color};
 
 use crate::{
@@ -111,8 +112,8 @@ impl Control for InputBox {
         self.geometry.size()
     }
 
-    fn add_child(&mut self, child: WeakHandle<dyn Control>) -> Result<IdType, ()> {
-        Err(())
+    fn add_child(&mut self, child: WeakHandle<dyn Control>) -> anyhow::Result<IdType> {
+        Err(Error::msg("InputBox cannot have children"))
     }
 
     fn remove_child(&mut self, child: WeakHandle<dyn Control>) {}

@@ -4,6 +4,7 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
+anyhow.workspace = true
 cosmic-text = "0.14.2"
 fontconfig = "0.10.0"
 global-hotkey = "0.7.0"
