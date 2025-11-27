@@ -46,4 +46,8 @@ impl CtrlCtx {
     pub fn font_mgr(&self) -> Rc<RefCell<FontMgr>> {
         self.font_mgr.clone()
     }
+
+    pub fn focus_mgr(&self) -> Arc<Mutex<FocusMgr>> {
+        self.focus_mgr.clone()
+    }
 }

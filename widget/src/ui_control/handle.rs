@@ -1,5 +1,6 @@
 use std::{
     any::TypeId,
+    hash::Hash,
     marker::PhantomData,
     ops::{Deref, DerefMut},
     ptr::{drop_in_place, null_mut},
@@ -16,6 +17,7 @@ struct HandleInner<T: Control + ?Sized = dyn Control> {
     _marker: PhantomData<T>,
 }
 
+#[derive(Eq)]
 pub struct Handle<T: Control + ?Sized = dyn Control> {
     inner: *mut HandleInner<T>,
 }
@@ -47,10 +49,43 @@ impl<T: Control + ?Sized> Clone for Handle<T> {
     }
 }
 
+impl<T: Control + ?Sized> PartialEq for Handle<T> {
+    fn eq(&self, other: &Self) -> bool {
+        unsafe { (*self.inner).data == (*other.inner).data }
+    }
+}
+
+impl<T: Control + ?Sized> Hash for Handle<T> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        unsafe { (*(*self.inner).data).id() }.hash(state);
+    }
+}
+
 impl<T: Control + ?Sized> Clone for WeakHandle<T> {
     fn clone(&self) -> Self {
         unsafe { (*self.inner).weak += 1 };
         Self { inner: self.inner }
+    }
+}
+impl<T: Control + ?Sized> PartialEq for WeakHandle<T> {
+    fn eq(&self, other: &Self) -> bool {
+        if unsafe { (*self.inner).strong } != 0 && unsafe { (*other.inner).strong } != 0 {
+            unsafe { (*self.inner).data == (*other.inner).data }
+        } else {
+            return unsafe { (*self.inner).strong } == 0 && unsafe { (*other.inner).strong } == 0;
+        }
+    }
+}
+
+impl<T: Control + ?Sized> Eq for WeakHandle<T> {}
+
+impl<T: Control + ?Sized> Hash for WeakHandle<T> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        if unsafe { (*self.inner).strong } != 0 {
+            unsafe { (*(*self.inner).data).id() }.hash(state)
+        } else {
+            state.write_usize(0);
+        }
     }
 }
 

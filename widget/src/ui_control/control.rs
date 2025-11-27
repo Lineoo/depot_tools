@@ -1,4 +1,4 @@
-use std::{any::Any, num::NonZero, panic};
+use std::{any::Any, hash::Hash, num::NonZero, panic};
 
 use anyhow::Error;
 
@@ -123,4 +123,10 @@ impl Control for PhantomControl {
     fn destroy_children(&mut self) {}
 
     fn on_init(&mut self, _event: &WinInitEvent) {}
+}
+
+impl Hash for dyn Control {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.id().hash(state);
+    }
 }

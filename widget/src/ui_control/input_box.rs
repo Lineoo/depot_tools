@@ -1,4 +1,4 @@
-use std::{cell::RefCell, path::Path, rc::Rc};
+use std::{cell::RefCell, path::Path, rc::Rc, sync::Arc};
 
 use anyhow::Error;
 use sdl3::{keyboard::TextInputUtil, pixels::Color};
@@ -11,6 +11,7 @@ use crate::{
         control::{Control, Handle, WeakHandle},
         ctrl_ctx::CtrlCtx,
         font::Font,
+        util::focus_mgr::FocusHandle,
     },
 };
 
@@ -28,7 +29,7 @@ pub struct InputBox {
     font_height: Option<f32>,
     placeholder: String,
     input_util: Option<Rc<RefCell<TextInputUtil>>>,
-    focused: bool,
+    focus_handle: Arc<FocusHandle>,
 }
 
 impl InputBox {
@@ -57,7 +58,7 @@ impl InputBox {
             font_height: None,
             placeholder: String::from("Input..."),
             input_util: None,
-            focused: false,
+            focus_handle: ctrl_ctx.focus_mgr().lock().unwrap().get_handle(),
         };
         InputBoxBuilder { input_box: r }
     }
