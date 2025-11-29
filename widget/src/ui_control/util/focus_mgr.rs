@@ -13,32 +13,85 @@ impl FocusMgr {
         }
     }
 
-    pub fn set_order(&mut self, former: WeakHandle<dyn Control>, control: WeakHandle<dyn Control>) {
-        if (!self.chain.contains(&former)) {
-            self.chain.insert(former);
+    pub fn set_order(&mut self, prev: WeakHandle<dyn Control>, control: WeakHandle<dyn Control>) {
+        if (!self.chain.contains(&prev)) {
+            self.chain.insert(prev.clone());
         }
+        self.insert_after(prev, control);
     }
 
-    pub fn insert(control: WeakHandle<dyn Control>) {}
-
-    pub fn insert_after(former: WeakHandle<dyn Control>, control: WeakHandle<dyn Control>) {}
-
-    pub fn remove(control: WeakHandle<dyn Control>) {}
-
-    pub fn contains(control: WeakHandle<dyn Control>) -> bool {}
-
-    pub fn query_former(
-        control: WeakHandle<dyn Control>,
-    ) -> Result<(WeakHandle<dyn Control>), FocusMgrQueryFailure> {
+    pub fn insert(&mut self, control: WeakHandle<dyn Control>) {
+        self.chain.insert(control);
     }
 
-    pub fn query_latter(
+    pub fn insert_after(
+        &mut self,
+        prev: WeakHandle<dyn Control>,
+        control: WeakHandle<dyn Control>,
+    ) -> Result<FocusMgrInsertState, FocusMgrInsertFailure> {
+        if !self.chain.contains(&prev) {
+            return Err(FocusMgrInsertFailure::PrevNotExist);
+        }
+        let (_, r) = self
+            .chain
+            .insert_before(self.chain.get_index_of(&prev).unwrap() + 1, control);
+        Ok(if r {
+            FocusMgrInsertState::InsertSuccess
+        } else {
+            FocusMgrInsertState::MoveOrder
+        })
+    }
+
+    pub fn remove(&mut self, control: WeakHandle<dyn Control>) {
+        self.chain.shift_remove(&control);
+    }
+
+    pub fn contains(&self, control: WeakHandle<dyn Control>) -> bool {
+        self.chain.contains(&control)
+    }
+
+    pub fn query_prev(
+        &self,
         control: WeakHandle<dyn Control>,
     ) -> Result<(WeakHandle<dyn Control>), FocusMgrQueryFailure> {
+        if !self.chain.contains(&control) {
+            return Err(FocusMgrQueryFailure::NotExist);
+        }
+        let idx = self.chain.get_index_of(&control).unwrap();
+        return Ok(self.chain[if idx == 0 {
+            self.chain.len() - 1
+        } else {
+            idx - 1
+        }]
+        .clone());
+    }
+
+    pub fn query_next(
+        &self,
+        control: WeakHandle<dyn Control>,
+    ) -> Result<(WeakHandle<dyn Control>), FocusMgrQueryFailure> {
+        if !self.chain.contains(&control) {
+            return Err(FocusMgrQueryFailure::NotExist);
+        }
+        let idx = self.chain.get_index_of(&control).unwrap();
+        return Ok(self.chain[if idx == self.chain.len() - 1 {
+            0
+        } else {
+            idx + 1
+        }]
+        .clone());
     }
 }
 
 pub enum FocusMgrQueryFailure {
     NotExist,
-    NoTargetHandle,
+}
+
+pub enum FocusMgrInsertFailure {
+    PrevNotExist,
+}
+
+pub enum FocusMgrInsertState {
+    InsertSuccess,
+    MoveOrder,
 }
