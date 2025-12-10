@@ -21,6 +21,10 @@ pub trait Control {
     fn parent_id(&self) -> Option<IdType>;
     fn id(&self) -> IdType;
 
+    fn supports_text_edit(&self) -> bool {
+        false
+    }
+
     /// true on success and false on failure
     fn set_parent(&mut self, parent: WeakHandle<dyn Control>) -> bool;
 

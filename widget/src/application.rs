@@ -92,6 +92,7 @@ impl Application {
                 self.hotkey_mgr.clone(),
                 self.get_id_mgr(),
                 self.input_util.clone(),
+                FocusMgr::new(),
                 self.ctrl_ctx.font_mgr(),
             ),
             HashMap::new(),
@@ -177,6 +178,41 @@ impl Application {
                         //     .unwrap()
                         //     .call_slot_option("keydown", keycode)
                         //     .unwrap();
+                    }
+                    Event::TextEditing {
+                        window_id,
+                        text,
+                        start,
+                        length,
+                        ..
+                    } => {
+                        if let Some(control) = self
+                            .wins
+                            .get(&window_id)
+                            .unwrap()
+                            .borrow()
+                            .get_active_control()
+                            && control.upgrade().unwrap().borrow().supports_text_edit()
+                        {
+                        }
+                    }
+                    Event::TextInput {
+                        window_id, text, ..
+                    } => {
+                        if self
+                            .wins
+                            .get(&window_id)
+                            .unwrap()
+                            .borrow()
+                            .get_win()
+                            .get_active_control()
+                            .upgrade()
+                            .unwrap()
+                            .borrow()
+                            .supports_text_edit()
+                        {
+                            todo!()
+                        }
                     }
                     _ => {}
                 }

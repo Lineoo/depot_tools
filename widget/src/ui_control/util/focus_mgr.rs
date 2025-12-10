@@ -107,8 +107,12 @@ impl FocusMgr {
         }
     }
 
-    pub fn current(&self) -> WeakHandle<dyn Control> {
-        self.chain[self.current_idx].clone()
+    pub fn current(&self) -> Option<WeakHandle<dyn Control>> {
+        if self.chain.len() != 0 {
+            Some(self.chain[self.current_idx].clone())
+        } else {
+            None
+        }
     }
 }
 

@@ -113,11 +113,11 @@ fn main() {
     let vb = VBox::create(app.ctrl_ctx().clone());
 
     vb.borrow_mut()
-        .add(ib.downgrade().clone_untyped(), false, InsertPosition::First);
+        .add(ib.downgrade().into_untyped(), false, InsertPosition::First);
     vb.borrow_mut()
-        .add(lw.downgrade().clone_untyped(), true, InsertPosition::Last);
+        .add(lw.downgrade().into_untyped(), true, InsertPosition::Last);
 
-    w.set_child(vb.downgrade().clone_untyped());
+    w.set_child(vb.downgrade().into_untyped());
 
     app.reg_win(w);
     app.run();

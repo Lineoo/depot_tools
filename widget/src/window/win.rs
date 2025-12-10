@@ -13,6 +13,7 @@ use crate::{
     ui_control::{
         control::{Control, WeakHandle},
         font::FontMgr,
+        util::focus_mgr::FocusMgr,
     },
 };
 use crate::{id_manager::IdManager, window::win_strategy::*};
@@ -37,6 +38,8 @@ pub struct Window {
     userdata: Option<Box<dyn Any>>,
     input_util: Rc<RefCell<TextInputUtil>>,
 
+    focus_mgr: FocusMgr,
+
     child: Option<WeakHandle<dyn Control>>,
 }
 
@@ -46,6 +49,7 @@ impl Window {
         hotkey_manager: Rc<RefCell<(GlobalHotKeyManager, HashMap<u32, u32>)>>,
         id_mgr: Rc<RefCell<IdManager>>,
         input_util: Rc<RefCell<TextInputUtil>>,
+        focus_mgr: FocusMgr,
         font_mgr: Rc<RefCell<FontMgr>>,
     ) -> Self {
         let id = id_mgr.borrow_mut().get_id();
@@ -61,6 +65,7 @@ impl Window {
             id_mgr,
             userdata: None,
             input_util,
+            focus_mgr,
             child: None,
         }
     }
@@ -193,6 +198,10 @@ impl Window {
 
     pub unsafe fn raw(&self) -> &SdlWindow {
         self.cvs.window()
+    }
+
+    pub fn get_active_control(&self) -> Option<WeakHandle<dyn Control>> {
+        self.focus_mgr.current()
     }
 }
 

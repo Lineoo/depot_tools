@@ -12,7 +12,9 @@ use sdl3::{
     keyboard::TextInputUtil,
     pixels::Color,
     rect::Rect,
+    render::TextureCreator,
     ttf::Font as SdlFont,
+    video::WindowContext,
 };
 
 use crate::{
@@ -24,6 +26,7 @@ use crate::{
     window::Window,
 };
 
+/// Used to manage inner text of an input box.
 #[derive(Clone, Debug, Default)]
 struct InputArea {
     text: String,
@@ -163,6 +166,16 @@ pub(crate) struct InputAreaEvtNotSupport;
 
 const CLICK_MOVE_THRESHOLD_PX: u32 = 5;
 
+/// Helper struct to process events and render texts for an input box.
+///
+/// You can simply make your own input box control put a TextEdit in it and forward events to it.
+/// All rendering work can be automatically done, along with shortcuts and CJK support,  and no
+/// other decorations would be painted other than texts, cursor, and selection.
+///
+/// Animation is now not supported, but will be added in the future.
+///
+/// If you just want an input box, use `InputBox` instead, which provides better integration and
+/// can adapt to themes automatically.
 pub struct TextEdit {
     input_util: Rc<RefCell<TextInputUtil>>,
     win: Weak<RefCell<Window>>,
@@ -175,6 +188,9 @@ pub struct TextEdit {
 
     click_start_pos: Option<(u32, u32)>,
     is_dragging: bool,
+
+    on_text_change: Option<Box<dyn FnMut(String)>>,
+    on_ime_edit: Option<Box<dyn FnMut(String)>>,
 }
 
 impl TextEdit {
@@ -191,6 +207,9 @@ impl TextEdit {
 
             click_start_pos: None,
             is_dragging: false,
+
+            on_text_change: None,
+            on_ime_edit: None,
         }
     }
 
@@ -219,7 +238,11 @@ impl TextEdit {
                 todo!()
             }
             TextEditEvt::TextInput { text } => {
-                self.area.event(InputAreaEvent::TextInput { text });
+                self.area
+                    .event(InputAreaEvent::TextInput { text: text.clone() });
+                if let Some(ref mut on_text_change) = self.on_text_change {
+                    on_text_change(text);
+                }
             }
             TextEditEvt::TextEditing {
                 text,
@@ -227,10 +250,13 @@ impl TextEdit {
                 length,
             } => {
                 self.area.event(InputAreaEvent::TextEditing {
-                    text,
+                    text: text.clone(),
                     start: start as i32,
                     length: length as i32,
                 });
+                if let Some(ref mut on_ime_edit) = self.on_ime_edit {
+                    on_ime_edit(text);
+                }
             }
         }
         todo!()
@@ -262,7 +288,7 @@ impl TextEdit {
 
     pub fn render(&mut self, painter: &mut Painter) {
         painter.set_color(self.color);
-        let (x, y, _, _) = self.geometry;
+        let (x, y, _, _) = self.geometry; // TODO: clip rect here
         painter.text(self.text(), x, y, self.font.clone().unwrap());
         // TODO: render cursor, selection, composition
     }

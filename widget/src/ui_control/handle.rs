@@ -157,6 +157,10 @@ impl<T: Control + 'static> Handle<T> {
         }
     }
 
+    pub fn into_untyped(self) -> Handle {
+        self.clone_untyped()
+    }
+
     pub fn downgrade(&self) -> WeakHandle<T> {
         unsafe { (*self.inner).weak += 1 };
         WeakHandle { inner: self.inner }
@@ -199,6 +203,10 @@ impl<T: Control + 'static> WeakHandle<T> {
         WeakHandle {
             inner: self.inner as *mut HandleInner,
         }
+    }
+
+    pub fn into_untyped(self) -> WeakHandle {
+        self.clone_untyped()
     }
 }
 

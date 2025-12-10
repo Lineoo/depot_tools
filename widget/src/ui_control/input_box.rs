@@ -11,7 +11,6 @@ use crate::{
         control::{Control, Handle, WeakHandle},
         ctrl_ctx::CtrlCtx,
         font::Font,
-        util::focus_mgr::FocusHandle,
     },
 };
 
@@ -29,7 +28,6 @@ pub struct InputBox {
     font_height: Option<f32>,
     placeholder: String,
     input_util: Option<Rc<RefCell<TextInputUtil>>>,
-    focus_handle: Arc<FocusHandle>,
 }
 
 impl InputBox {
@@ -58,7 +56,6 @@ impl InputBox {
             font_height: None,
             placeholder: String::from("Input..."),
             input_util: None,
-            focus_handle: ctrl_ctx.focus_mgr().lock().unwrap().get_handle(),
         };
         InputBoxBuilder { input_box: r }
     }

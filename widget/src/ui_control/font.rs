@@ -38,9 +38,9 @@ impl FontMgr {
 
     pub fn load_local_family(&mut self, name: &str) -> Result<(), FontFamilyNotExist> {
         if let Err(err) = self.ctx.fs.borrow_mut().db_mut().load_font_file(name) {
-            return Err(FontFamilyNotExist);
-        } else {
             Err(FontFamilyNotExist)
+        } else {
+            Ok(())
         }
     }
 
