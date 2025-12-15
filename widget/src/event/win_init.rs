@@ -1,4 +1,4 @@
-use std::{cell::RefCell, rc::Weak};
+use std::{any::TypeId, cell::RefCell, rc::Weak};
 
 use crate::{
     event::{Event, EventType},
@@ -27,6 +27,10 @@ impl WinInitEvent {
 impl Event for WinInitEvent {
     fn name(&self) -> &str {
         "WinInitEvent"
+    }
+
+    fn type_id(&self) -> TypeId {
+        TypeId::of::<Self>()
     }
 
     fn timestamp(&self) -> u32 {

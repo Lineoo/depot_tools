@@ -171,6 +171,16 @@ impl Control for VBox {
             }
         }
     }
+
+    fn receives_event(&self, event_type: std::any::TypeId) -> bool {
+        self.children
+            .iter()
+            .any(|item| item.ctrl.borrow().receives_event(event_type))
+    }
+
+    fn process_event(&mut self, event: Box<dyn crate::event::Event>) -> bool {
+        todo!()
+    }
 }
 
 pub enum InsertPosition {

@@ -125,6 +125,10 @@ impl Control for InputBox {
     fn on_init(&mut self, event: &WinInitEvent) {
         todo!()
     }
+
+    fn process_event(&mut self, event: Box<dyn crate::event::Event>) -> bool {
+        todo!()
+    }
 }
 
 impl Drop for InputBox {

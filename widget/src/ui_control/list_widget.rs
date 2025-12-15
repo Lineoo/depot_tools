@@ -143,6 +143,10 @@ impl Control for ListWidget {
     fn destroy_children(&mut self) {}
 
     fn on_init(&mut self, _event: &WinInitEvent) {}
+
+    fn process_event(&mut self, event: Box<dyn crate::event::Event>) -> bool {
+        todo!()
+    }
 }
 
 impl Insertable for ListWidget {

@@ -1,14 +1,14 @@
 use std::{
     any::Any,
     cell::RefCell,
-    collections::{HashMap, HashSet},
+    collections::{HashMap, HashSet, LinkedList},
     ops::{Deref, DerefMut},
     rc::Rc,
 };
 
 use crate::{
     application::IdType,
-    event::win_init::WinInitEvent,
+    event::{Event, win_init::WinInitEvent},
     paint::{painter::Painter, shapes::Rect},
     ui_control::{
         control::{Control, WeakHandle},
@@ -39,6 +39,7 @@ pub struct Window {
     input_util: Rc<RefCell<TextInputUtil>>,
 
     focus_mgr: FocusMgr,
+    event_queue: LinkedList<Box<dyn Event>>,
 
     child: Option<WeakHandle<dyn Control>>,
 }
@@ -66,6 +67,7 @@ impl Window {
             userdata: None,
             input_util,
             focus_mgr,
+            event_queue: LinkedList::new(),
             child: None,
         }
     }
@@ -89,27 +91,6 @@ impl Window {
     }
 
     pub(crate) fn paint(&mut self) {
-        // self.cvs
-        //     .set_draw_color(sdl3::pixels::Color::RGB(255, 252, 241));
-        // self.cvs.clear();
-
-        // self.cvs.set_draw_color(sdl3::pixels::Color::RGB(0, 0, 0));
-        // self.cvs
-        //     .fill_rect(sdl3::rect::Rect::new(5, 5, 400, 30))
-        //     .expect("Failed to fill rectangle");
-        // if let Some(font) = &self.font {
-        //     let r = font
-        //         .render(self.get_userdata::<(String, usize)>().unwrap().0.as_str())
-        //         .blended(Color::RGB(255, 255, 255));
-        //     if let Ok(surface) = r {
-        //         self.cvs.copy(
-        //             &surface.as_texture(&self.cvs.texture_creator()).unwrap(),
-        //             surface.rect(),
-        //             FRect::new(7.0, 7.0, surface.width() as f32, surface.height() as f32),
-        //         );
-        //     }
-        // }
-        // self.cvs.present();
         let mut p = Painter::new(
             self.cvs.window().size(),
             self.texture_creator.clone(),
@@ -166,6 +147,58 @@ impl Window {
     pub fn end_input(&self) {
         let input_util = self.input_util.borrow();
         input_util.stop(self.cvs.window());
+    }
+
+    pub fn push_event<Evt: Event + 'static>(&mut self, event: Evt) {
+        self.event_queue.push_back(Box::new(event));
+    }
+
+    pub(crate) fn distribute_event_one(&mut self) -> Result<bool, WindowEventDistributeError> {
+        if self.event_queue.is_empty() {
+            return Ok(false);
+        }
+        let event = self.event_queue.pop_front().unwrap();
+        let id;
+        if let Some(Some(child)) = self.child.as_ref().map(|child| child.upgrade()) {
+            if let Some(child_ref) = child.try_borrow() {
+                if !child_ref.receives_event(event.type_id()) {
+                    return Ok(true);
+                }
+                id = child_ref.id();
+                // continue to distribute event
+            } else {
+                return Err(WindowEventDistributeError::ControlBorrowError);
+            }
+        } else {
+            return Ok(false);
+        }
+
+        // distribute event
+        if let Some(Some(child)) = self.child.as_ref().map(|child| child.upgrade()) {
+            if let Some(mut child_ref) = child.try_borrow_mut() {
+                child_ref.process_event(event);
+                Ok(true)
+            } else {
+                Err(WindowEventDistributeError::ControlMutablyBorrowError(id))
+            }
+        } else {
+            Ok(false)
+        }
+    }
+
+    pub(crate) fn distribute_event_some(
+        &mut self,
+        count: usize,
+    ) -> Result<usize, WindowEventDistributeError> {
+        todo!()
+    }
+
+    pub(crate) fn distribute_event_all(&mut self) -> Result<usize, WindowEventDistributeError> {
+        self.distribute_event_some(self.event_queue.len())
+    }
+
+    pub fn event_count(&self) -> usize {
+        self.event_queue.len()
     }
 
     pub fn size(&self) -> (u32, u32) {
@@ -321,6 +354,14 @@ impl DerefMut for WindowDirector {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.win
     }
+}
+
+#[derive(Error, Debug)]
+pub enum WindowEventDistributeError {
+    #[error("Could not borrow child control")]
+    ControlBorrowError,
+    #[error("Could not mutably borrow child control, id: {0}")]
+    ControlMutablyBorrowError(IdType),
 }
 
 #[derive(Error, Debug)]

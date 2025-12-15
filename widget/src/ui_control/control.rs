@@ -1,10 +1,15 @@
-use std::{any::Any, hash::Hash, num::NonZero, panic};
+use std::{
+    any::{Any, TypeId},
+    hash::Hash,
+    num::NonZero,
+    panic,
+};
 
 use anyhow::Error;
 
 use crate::{
     application::IdType,
-    event::{SysEvent, win_init::WinInitEvent},
+    event::{Event, SysEvent, win_init::WinInitEvent},
     paint::{painter::Painter, shapes::Rect},
     ui_control::ctrl_mgr::CtrlMgr,
 };
@@ -67,6 +72,12 @@ pub trait Control {
     fn on_init(&mut self, event: &WinInitEvent);
 
     fn receive_sys_event(&mut self, _event: SysEvent) {}
+
+    fn receives_event(&self, _event_type: TypeId) -> bool {
+        false
+    }
+
+    fn process_event(&mut self, event: Box<dyn Event>) -> bool;
 }
 
 pub trait Insertable: Control {
@@ -127,6 +138,10 @@ impl Control for PhantomControl {
     fn destroy_children(&mut self) {}
 
     fn on_init(&mut self, _event: &WinInitEvent) {}
+
+    fn process_event(&mut self, _event: Box<dyn Event>) -> bool {
+        false
+    }
 }
 
 impl Hash for dyn Control {

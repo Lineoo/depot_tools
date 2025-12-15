@@ -186,30 +186,33 @@ impl Application {
                         length,
                         ..
                     } => {
-                        if let Some(control) = self
+                        if let Some(active_control) = self
                             .wins
                             .get(&window_id)
                             .unwrap()
                             .borrow()
                             .get_active_control()
-                            && control.upgrade().unwrap().borrow().supports_text_edit()
-                        {
-                        }
+                            && active_control
+                                .upgrade()
+                                .unwrap()
+                                .borrow()
+                                .supports_text_edit()
+                        {}
                     }
                     Event::TextInput {
                         window_id, text, ..
                     } => {
-                        if self
+                        if let Some(active_control) = self
                             .wins
                             .get(&window_id)
                             .unwrap()
                             .borrow()
-                            .get_win()
                             .get_active_control()
-                            .upgrade()
-                            .unwrap()
-                            .borrow()
-                            .supports_text_edit()
+                            && active_control
+                                .upgrade()
+                                .unwrap()
+                                .borrow()
+                                .supports_text_edit()
                         {
                             todo!()
                         }
