@@ -7,7 +7,7 @@ use crate::{
     event::win_init::WinInitEvent,
     paint::{painter::Painter, shapes::Rect},
     ui_control::{
-        control::{Control, Handle, WeakHandle},
+        control::{Control, ControlCapability, Handle, WeakHandle},
         ctrl_ctx::CtrlCtx,
     },
 };
@@ -72,6 +72,14 @@ impl VBox {
 }
 
 impl Control for VBox {
+    fn query_capability(&self, cap: ControlCapability) -> bool {
+        match cap {
+            ControlCapability::CanInsertChild => true,
+            ControlCapability::CanInsertMultiChildren => true,
+            _ => false,
+        }
+    }
+
     fn window_id(&self) -> Option<IdType> {
         self.win_id
     }

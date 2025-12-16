@@ -20,15 +20,19 @@ pub type EventArg = Option<Box<dyn Any>>;
 
 pub type EventProc = Box<dyn FnMut(String, WeakHandle<dyn Control>, WeakHandle<dyn Control>)>; // name, provider, receiver
 
+pub enum ControlCapability {
+    CanInsertChild,
+    CanInsertMultiChildren,
+    TextEdit,
+}
+
 pub trait Control {
+    fn query_capability(&self, cap: ControlCapability) -> bool;
+
     fn window_id(&self) -> Option<IdType>;
 
     fn parent_id(&self) -> Option<IdType>;
     fn id(&self) -> IdType;
-
-    fn supports_text_edit(&self) -> bool {
-        false
-    }
 
     /// true on success and false on failure
     fn set_parent(&mut self, parent: WeakHandle<dyn Control>) -> bool;
@@ -61,7 +65,6 @@ pub trait Control {
 
     // fn on_event(&mut self, event: String, arg: EventArg);
 
-    /// true on success and false on failure
     fn add_child(&mut self, child: WeakHandle<dyn Control>) -> anyhow::Result<IdType>;
     fn remove_child(&mut self, child: WeakHandle<dyn Control>);
     fn remove_child_by_id(&mut self, child_id: IdType);
@@ -95,6 +98,10 @@ pub struct AddChildErr(pub ());
 pub struct PhantomControl;
 
 impl Control for PhantomControl {
+    fn query_capability(&self, cap: ControlCapability) -> bool {
+        false
+    }
+
     fn window_id(&self) -> Option<IdType> {
         None
     }
@@ -126,7 +133,7 @@ impl Control for PhantomControl {
     }
 
     fn add_child(&mut self, _child: WeakHandle<dyn Control>) -> anyhow::Result<IdType> {
-        Err(Error::msg("Phantom control does not have an id!"))
+        Err(Error::msg("Phantom control could not add child"))
     }
 
     fn remove_child(&mut self, _child: WeakHandle<dyn Control>) {}

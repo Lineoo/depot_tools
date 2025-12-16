@@ -192,11 +192,9 @@ impl Application {
                             .unwrap()
                             .borrow()
                             .get_active_control()
-                            && active_control
-                                .upgrade()
-                                .unwrap()
-                                .borrow()
-                                .supports_text_edit()
+                            && active_control.upgrade().unwrap().borrow().query_capability(
+                                crate::ui_control::control::ControlCapability::TextEdit,
+                            )
                         {}
                     }
                     Event::TextInput {
@@ -208,11 +206,9 @@ impl Application {
                             .unwrap()
                             .borrow()
                             .get_active_control()
-                            && active_control
-                                .upgrade()
-                                .unwrap()
-                                .borrow()
-                                .supports_text_edit()
+                            && active_control.upgrade().unwrap().borrow().query_capability(
+                                crate::ui_control::control::ControlCapability::TextEdit,
+                            )
                         {
                             todo!()
                         }

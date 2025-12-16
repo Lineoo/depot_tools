@@ -8,7 +8,7 @@ use crate::{
     event::win_init::WinInitEvent,
     paint::{painter::Painter, shapes::Rect},
     ui_control::{
-        control::{Control, Handle, Insertable, WeakHandle},
+        control::{Control, ControlCapability, Handle, Insertable, WeakHandle},
         ctrl_ctx::CtrlCtx,
         ctrl_mgr::CtrlMgr,
     },
@@ -67,6 +67,14 @@ impl ListWidget {
 }
 
 impl Control for ListWidget {
+    fn query_capability(&self, cap: ControlCapability) -> bool {
+        match cap {
+            ControlCapability::CanInsertChild => false,
+            ControlCapability::CanInsertMultiChildren => false,
+            _ => false,
+        }
+    }
+
     fn window_id(&self) -> Option<IdType> {
         self.win_id
     }

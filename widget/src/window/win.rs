@@ -190,7 +190,11 @@ impl Window {
         &mut self,
         count: usize,
     ) -> Result<usize, WindowEventDistributeError> {
-        todo!()
+        let mut actual_count = 0;
+        while actual_count != count && self.distribute_event_one()? {
+            actual_count += 1;
+        }
+        Ok(actual_count)
     }
 
     pub(crate) fn distribute_event_all(&mut self) -> Result<usize, WindowEventDistributeError> {

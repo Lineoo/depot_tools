@@ -5,10 +5,10 @@ use sdl3::{keyboard::TextInputUtil, pixels::Color};
 
 use crate::{
     application::IdType,
-    event::win_init::WinInitEvent,
+    event::{Event, win_init::WinInitEvent},
     paint::{painter::Painter, shapes::Rect},
     ui_control::{
-        control::{Control, Handle, WeakHandle},
+        control::{Control, ControlCapability, Handle, WeakHandle},
         ctrl_ctx::CtrlCtx,
         font::Font,
     },
@@ -31,13 +31,24 @@ pub struct InputBox {
 }
 
 impl InputBox {
+    pub fn create(ctrl_ctx: Rc<CtrlCtx>) -> Handle<Self> {
+        let r = Self::new(ctrl_ctx);
+        Handle::new(r)
+    }
+
     pub fn builder(ctrl_ctx: Rc<CtrlCtx>) -> InputBoxBuilder {
+        InputBoxBuilder {
+            input_box: Self::new(ctrl_ctx),
+        }
+    }
+
+    fn new(ctrl_ctx: Rc<CtrlCtx>) -> Self {
         let id = ctrl_ctx.id_mgr().borrow_mut().get_id();
         ctrl_ctx
             .font_mgr()
             .borrow_mut()
             .load_local_family("FiraCode-Regular.ttf");
-        let r = InputBox {
+        Self {
             id,
             parent_id: None,
             win_id: None,
@@ -56,12 +67,19 @@ impl InputBox {
             font_height: None,
             placeholder: String::from("Input..."),
             input_util: None,
-        };
-        InputBoxBuilder { input_box: r }
+        }
     }
 }
 
 impl Control for InputBox {
+    fn query_capability(&self, cap: ControlCapability) -> bool {
+        match cap {
+            ControlCapability::CanInsertChild => false,
+            ControlCapability::CanInsertMultiChildren => false,
+            ControlCapability::TextEdit => true,
+        }
+    }
+
     fn window_id(&self) -> Option<IdType> {
         self.win_id
     }
@@ -122,11 +140,9 @@ impl Control for InputBox {
 
     fn destroy_children(&mut self) {}
 
-    fn on_init(&mut self, event: &WinInitEvent) {
-        todo!()
-    }
+    fn on_init(&mut self, event: &WinInitEvent) {}
 
-    fn process_event(&mut self, event: Box<dyn crate::event::Event>) -> bool {
+    fn process_event(&mut self, event: Box<dyn Event>) -> bool {
         todo!()
     }
 }
