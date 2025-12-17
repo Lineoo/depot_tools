@@ -29,10 +29,6 @@ impl Event for WinInitEvent {
         "WinInitEvent"
     }
 
-    fn type_id(&self) -> TypeId {
-        TypeId::of::<Self>()
-    }
-
     fn timestamp(&self) -> u32 {
         0
     }

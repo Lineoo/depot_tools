@@ -21,7 +21,7 @@ struct VBoxItem {
 
 pub struct VBox {
     id: IdType,
-    parent_id: Option<IdType>,
+    parent: WeakHandle<dyn Control>,
     win_id: Option<IdType>,
     children: SmallVec<[VBoxItem; 3]>,
     geometry: Rect,
@@ -34,7 +34,7 @@ impl VBox {
         let id = ctrl_ctx.id_mgr().borrow_mut().get_id();
         let r = Handle::new(VBox {
             id,
-            parent_id: None,
+            parent: WeakHandle::new(),
             win_id: None,
             children: SmallVec::new(),
             geometry: Rect::new(0, 0, 0, 0),
@@ -84,8 +84,8 @@ impl Control for VBox {
         self.win_id
     }
 
-    fn parent_id(&self) -> Option<IdType> {
-        self.parent_id
+    fn parent(&self) -> WeakHandle<dyn Control> {
+        self.parent.clone()
     }
 
     fn id(&self) -> IdType {

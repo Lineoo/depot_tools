@@ -16,7 +16,7 @@ use crate::{
 
 pub struct InputBox {
     id: IdType,
-    parent_id: Option<IdType>,
+    parent: WeakHandle<dyn Control>,
     win_id: Option<IdType>,
     geometry: Rect,
     ctrl_ctx: Rc<CtrlCtx>,
@@ -50,7 +50,7 @@ impl InputBox {
             .load_local_family("FiraCode-Regular.ttf");
         Self {
             id,
-            parent_id: None,
+            parent: WeakHandle::new(),
             win_id: None,
             geometry: Rect::new(0, 0, 100, 30),
             ctrl_ctx: ctrl_ctx.clone(),
@@ -84,8 +84,8 @@ impl Control for InputBox {
         self.win_id
     }
 
-    fn parent_id(&self) -> Option<IdType> {
-        self.parent_id
+    fn parent(&self) -> WeakHandle<dyn Control> {
+        self.parent.clone()
     }
 
     fn id(&self) -> IdType {
@@ -93,10 +93,16 @@ impl Control for InputBox {
     }
 
     fn set_parent(&mut self, parent: WeakHandle<dyn Control>) -> bool {
-        if let Some(parent) = parent.upgrade() {
-            parent
+        if let Some(old_parent) = self.parent.upgrade() {
+            old_parent
                 .borrow_mut()
-                .add_child(self.this.clone().unwrap().clone_untyped());
+                .remove_child(self.this.clone().unwrap().into_untyped());
+        }
+        if let Some(new_parent) = parent.upgrade() {
+            new_parent
+                .borrow_mut()
+                .add_child(self.this.clone().unwrap().into_untyped());
+            self.parent = parent;
             true
         } else {
             false

@@ -159,7 +159,9 @@ impl Window {
         }
         let event = self.event_queue.pop_front().unwrap();
         let id;
-        if let Some(Some(child)) = self.child.as_ref().map(|child| child.upgrade()) {
+        if let Some(child) = self.child.as_ref()
+            && let Some(child) = child.upgrade()
+        {
             if let Some(child_ref) = child.try_borrow() {
                 if !child_ref.receives_event(event.type_id()) {
                     return Ok(true);
@@ -174,7 +176,9 @@ impl Window {
         }
 
         // distribute event
-        if let Some(Some(child)) = self.child.as_ref().map(|child| child.upgrade()) {
+        if let Some(child) = self.child.as_ref()
+            && let Some(child) = child.upgrade()
+        {
             if let Some(mut child_ref) = child.try_borrow_mut() {
                 child_ref.process_event(event);
                 Ok(true)

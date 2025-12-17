@@ -31,7 +31,7 @@ pub trait Control {
 
     fn window_id(&self) -> Option<IdType>;
 
-    fn parent_id(&self) -> Option<IdType>;
+    fn parent(&self) -> WeakHandle<dyn Control>;
     fn id(&self) -> IdType;
 
     /// true on success and false on failure
@@ -106,8 +106,8 @@ impl Control for PhantomControl {
         None
     }
 
-    fn parent_id(&self) -> Option<IdType> {
-        None
+    fn parent(&self) -> WeakHandle<dyn Control> {
+        WeakHandle::new()
     }
 
     fn id(&self) -> IdType {

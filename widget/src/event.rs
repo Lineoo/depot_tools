@@ -4,11 +4,15 @@ use crate::ui_control::control::{Control, WeakHandle};
 
 pub mod win_init;
 
-pub trait Event {
+pub trait Event: 'static {
     fn name(&self) -> &str;
-    fn type_id(&self) -> TypeId;
     fn timestamp(&self) -> u32;
     fn event_type(&self) -> EventType;
+
+    fn type_id(&self) -> TypeId {
+        TypeId::of::<Self>()
+    }
+
     fn sender(&self) -> WeakHandle<dyn Control> {
         WeakHandle::default()
     }
