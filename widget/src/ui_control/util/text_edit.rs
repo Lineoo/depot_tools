@@ -333,7 +333,13 @@ impl TextEdit {
         let mut buffer = UnicodeBuffer::new();
         buffer.push_str(self.text());
         let pos_vec = rustybuzz::shape(
-            self.font.as_ref().unwrap().borrow().data.rustybuzz(),
+            self.font
+                .as_ref()
+                .unwrap()
+                .borrow()
+                .data
+                .borrow()
+                .rustybuzz(),
             &[],
             buffer,
         )

@@ -20,6 +20,7 @@ pub type EventArg = Option<Box<dyn Any>>;
 
 pub type EventProc = Box<dyn FnMut(String, WeakHandle<dyn Control>, WeakHandle<dyn Control>)>; // name, provider, receiver
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum ControlCapability {
     CanInsertChild,
     CanInsertMultiChildren,

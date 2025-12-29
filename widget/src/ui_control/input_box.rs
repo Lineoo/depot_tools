@@ -58,7 +58,7 @@ impl InputBox {
                 ctrl_ctx
                     .font_mgr()
                     .borrow()
-                    .get_font("FiraCode-Regular", 22)
+                    .get_font_by_name("FiraCode-Regular", 22)
                     .unwrap(),
             )),
             this: None,

@@ -163,7 +163,7 @@ impl Window {
             && let Some(child) = child.upgrade()
         {
             if let Some(child_ref) = child.try_borrow() {
-                if !child_ref.receives_event(event.type_id()) {
+                if !child_ref.receives_event(event.get_type_id()) {
                     return Ok(true);
                 }
                 id = child_ref.id();
@@ -179,7 +179,12 @@ impl Window {
         if let Some(child) = self.child.as_ref()
             && let Some(child) = child.upgrade()
         {
-            if let Some(mut child_ref) = child.try_borrow_mut() {
+            if let Some(mut child_ref) = child.try_borrow_mut()
+                && event
+                    .required_capabilities()
+                    .iter()
+                    .all(|c| child_ref.query_capability(*c))
+            {
                 child_ref.process_event(event);
                 Ok(true)
             } else {

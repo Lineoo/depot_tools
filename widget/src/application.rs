@@ -6,10 +6,12 @@
 //! Every application should have a single instance of `Application`,
 //! but more instances are not prohibited.
 
+use crate::event::edit::{ImEditEvent, TextEditEvent};
 use crate::id_manager::IdManager;
+use crate::ui_control::control::ControlCapability;
 use crate::ui_control::ctrl_ctx::CtrlCtx;
 use crate::ui_control::ctrl_mgr::{CtrlMgr, make_ctrl_ctx};
-use crate::ui_control::font::FontMgr;
+use crate::ui_control::font::{DefaultFamily, FontMgr};
 use crate::ui_control::util::focus_mgr::FocusMgr;
 use crate::ui_control::util::text_edit;
 use crate::window::WindowStrategyError;
@@ -64,7 +66,7 @@ impl Application {
         let ctrl_ctx = Rc::new(make_ctrl_ctx(
             id_mgr.clone(),
             controls.clone(),
-            Rc::new(RefCell::new(FontMgr::new().unwrap())),
+            Rc::new(RefCell::new(default_font_mgr().unwrap())),
             Arc::new(Mutex::new(FocusMgr::new())),
         ));
         Application {
@@ -184,7 +186,7 @@ impl Application {
                         text,
                         start,
                         length,
-                        ..
+                        timestamp,
                     } => {
                         if let Some(active_control) = self
                             .wins
@@ -192,13 +194,26 @@ impl Application {
                             .unwrap()
                             .borrow()
                             .get_active_control()
-                            && active_control.upgrade().unwrap().borrow().query_capability(
-                                crate::ui_control::control::ControlCapability::TextEdit,
-                            )
-                        {}
+                            && active_control
+                                .upgrade()
+                                .unwrap()
+                                .borrow()
+                                .query_capability(ControlCapability::TextEdit)
+                        {
+                            self.wins[&window_id]
+                                .borrow_mut()
+                                .push_event(ImEditEvent::new(
+                                    text,
+                                    start as usize,
+                                    length as usize,
+                                    timestamp,
+                                ));
+                        }
                     }
                     Event::TextInput {
-                        window_id, text, ..
+                        window_id,
+                        text,
+                        timestamp,
                     } => {
                         if let Some(active_control) = self
                             .wins
@@ -206,18 +221,26 @@ impl Application {
                             .unwrap()
                             .borrow()
                             .get_active_control()
-                            && active_control.upgrade().unwrap().borrow().query_capability(
-                                crate::ui_control::control::ControlCapability::TextEdit,
-                            )
+                            && active_control
+                                .upgrade()
+                                .unwrap()
+                                .borrow()
+                                .query_capability(ControlCapability::TextEdit)
                         {
-                            todo!()
+                            self.wins[&window_id]
+                                .borrow_mut()
+                                .push_event(TextEditEvent::new(text, timestamp));
                         }
                     }
                     _ => {}
                 }
             }
             for win in self.wins.values_mut() {
-                win.borrow_mut().paint(); // Call paint on each registered window
+                let mut ww = win.borrow_mut();
+                ww.paint(); // Call paint on each registered window
+                if ww.distribute_event_all().is_err() {
+                    return; // TODO: Handle errors
+                }
             }
 
             if let Ok(event) = GlobalHotKeyEvent::receiver().try_recv() {
@@ -235,4 +258,16 @@ impl Default for Application {
     fn default() -> Self {
         Self::new()
     }
+}
+
+fn default_font_mgr() -> Option<FontMgr> {
+    Some(
+        FontMgr::new()?
+            .load_default_family(DefaultFamily::SansSerif)
+            .load_default_family(DefaultFamily::Serif)
+            .load_default_family(DefaultFamily::Monospace)
+            .load_default_family(DefaultFamily::UiFont)
+            .load_default_family(DefaultFamily::CodeFont)
+            .load_default_family(DefaultFamily::TerminalFont),
+    )
 }

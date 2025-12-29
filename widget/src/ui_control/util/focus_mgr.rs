@@ -15,11 +15,15 @@ impl FocusMgr {
         }
     }
 
-    pub fn set_order(&mut self, prev: WeakHandle<dyn Control>, control: WeakHandle<dyn Control>) {
+    pub fn set_order(
+        &mut self,
+        prev: WeakHandle<dyn Control>,
+        control: WeakHandle<dyn Control>,
+    ) -> Result<FocusMgrInsertState, FocusMgrInsertFailure> {
         if !self.chain.contains(&prev) {
             self.chain.insert(prev.clone());
         }
-        self.insert_after(prev, control);
+        self.insert_after(prev, control)
     }
 
     pub fn insert(&mut self, control: WeakHandle<dyn Control>) {

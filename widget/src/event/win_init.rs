@@ -29,7 +29,7 @@ impl Event for WinInitEvent {
         "WinInitEvent"
     }
 
-    fn timestamp(&self) -> u32 {
+    fn timestamp(&self) -> u64 {
         0
     }
 
