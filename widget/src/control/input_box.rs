@@ -1,6 +1,7 @@
 use std::{
     any::TypeId,
     cell::RefCell,
+    collections::{HashMap, LinkedList},
     path::Path,
     rc::{Rc, Weak},
     sync::Arc,
@@ -16,7 +17,7 @@ use sdl3::{
 use crate::{
     application::IdType,
     control::{
-        Control, ControlCapability, Handle, WeakHandle,
+        Control, ControlCapability, Handle, SlotInsertErr, WeakHandle,
         ctrl_ctx::CtrlCtx,
         font::Font,
         util::{focus_mgr::FocusMgr, text_edit::TextEdit},
@@ -30,6 +31,7 @@ use crate::{
         win_init::WinInitEvent,
     },
     paint::{painter::Painter, shapes::Rect},
+    slot_handle::Slot,
     window::WindowDirector,
 };
 
@@ -46,9 +48,14 @@ pub struct InputBox {
     font_height: Option<f32>,
     placeholder: String,
     input_util: Option<Rc<RefCell<TextInputUtil>>>,
+
+    slots: HashMap<String, LinkedList<Box<dyn Slot>>>,
 }
 
 impl InputBox {
+    pub const SIGNAL_TEXT_CHANGED: &'static str = "text_changed";
+    pub const SIGNAL_SUBMIT: &'static str = "submit";
+
     pub fn create(ctrl_ctx: Rc<CtrlCtx>) -> Handle<Self> {
         let r = Handle::new(Self::new(ctrl_ctx.clone()));
         r.borrow_mut().this = Some(r.downgrade());
@@ -69,6 +76,9 @@ impl InputBox {
         let id = ctrl_ctx.id_mgr().borrow_mut().get_id();
         ctrl_ctx.font_mgr().borrow_mut();
         // .load_local_family("FiraCode-Regular.ttf");
+        let mut slots = HashMap::new();
+        slots.insert(Self::SIGNAL_TEXT_CHANGED.to_string(), LinkedList::new());
+        slots.insert(Self::SIGNAL_SUBMIT.to_string(), LinkedList::new());
         Self {
             id,
             parent: WeakHandle::new(),
@@ -87,6 +97,7 @@ impl InputBox {
             font_height: None,
             placeholder: String::from("Input..."),
             input_util: None,
+            slots,
         }
     }
 }
@@ -154,6 +165,20 @@ impl Control for InputBox {
         self.geometry.size()
     }
 
+    fn add_slot(&mut self, signal_name: String, slot: Box<dyn Slot>) -> Result<(), SlotInsertErr> {
+        match &*signal_name {
+            Self::SIGNAL_TEXT_CHANGED | Self::SIGNAL_SUBMIT => {
+                if slot.arg_type_is::<String>() {
+                    self.slots.get_mut(&signal_name).unwrap().push_back(slot);
+                    Ok(())
+                } else {
+                    Err(SlotInsertErr::SlotArgMismatch)
+                }
+            }
+            _ => Err(SlotInsertErr::SlotNotExist),
+        }
+    }
+
     fn add_child(&mut self, child: WeakHandle<dyn Control>) -> anyhow::Result<IdType> {
         Err(Error::msg("InputBox cannot have children"))
     }
@@ -182,10 +207,24 @@ impl Control for InputBox {
         } else if type_id == TypeId::of::<ImEditEvent>() {
             let event = event.downcast_ref::<ImEditEvent>().unwrap();
             // TODO
+            self.slots
+                .get_mut(Self::SIGNAL_TEXT_CHANGED)
+                .unwrap()
+                .iter_mut()
+                .for_each(|slot| {
+                    slot.call(Box::new(self.edit.text())).unwrap();
+                });
             true
         } else if type_id == TypeId::of::<TextEditEvent>() {
             let event = event.downcast_ref::<TextEditEvent>().unwrap();
             self.edit.insert_text(&event.text);
+            self.slots
+                .get_mut(Self::SIGNAL_TEXT_CHANGED)
+                .unwrap()
+                .iter_mut()
+                .for_each(|slot| {
+                    slot.call(Box::new(self.edit.text())).unwrap();
+                });
             true
         } else if type_id == TypeId::of::<GainFocusEvent>() {
             self.edit.gain_focus().is_ok()
@@ -207,6 +246,18 @@ impl Control for InputBox {
                     Keycode::PageUp => self.edit.action(Action::Motion(CosmicMotion::PageUp)),
                     Keycode::PageDown => self.edit.action(Action::Motion(CosmicMotion::PageDown)),
                     _ => return false,
+                }
+                match event.keycode {
+                    Keycode::Backspace | Keycode::Delete | Keycode::Return => {
+                        self.slots
+                            .get_mut(Self::SIGNAL_TEXT_CHANGED)
+                            .unwrap()
+                            .iter_mut()
+                            .for_each(|slot| {
+                                slot.call(Box::new(self.edit.text())).unwrap();
+                            });
+                    }
+                    _ => {}
                 }
                 true
             } else {

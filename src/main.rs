@@ -2,6 +2,7 @@ use widget::{
     Keycode,
     application::Application,
     control::{
+        Control,
         input_box::InputBox,
         list_widget::ListWidget,
         vbox::{InsertPosition, VBox},
@@ -111,6 +112,13 @@ fn main() {
     let ib = InputBox::create(app.ctrl_ctx().clone());
     let lw = ListWidget::create(app.ctrl_ctx().clone());
     let vb = VBox::create(app.ctrl_ctx().clone());
+
+    (&mut *ib.borrow_mut() as &mut dyn Control)
+        .connect(InputBox::SIGNAL_TEXT_CHANGED, |text: String| {
+            println!("{}", text)
+            // logic here
+        })
+        .unwrap();
 
     vb.borrow_mut()
         .add(ib.downgrade().into_untyped(), false, InsertPosition::First);

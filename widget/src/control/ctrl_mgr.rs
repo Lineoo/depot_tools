@@ -10,7 +10,7 @@ use sdl3::keyboard::TextInputUtil;
 use crate::{
     application::IdType,
     control::{
-        Control, Handle, Insertable,
+        Control, Handle,
         ctrl_ctx::CtrlCtx,
         font::FontMgr,
         util::{focus_mgr::FocusMgr, text_edit},
@@ -27,10 +27,6 @@ impl CtrlMgr {
         CtrlMgr {
             ctrls: HashMap::new(),
         }
-    }
-
-    pub fn add_ctrl<C: Insertable>(&mut self, mut ctrl: C) {
-        ctrl.insert_tree(self);
     }
 
     pub fn insert_item(&mut self, ctrl: Handle<dyn Control>) {

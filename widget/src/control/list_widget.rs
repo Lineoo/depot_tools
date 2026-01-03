@@ -6,10 +6,10 @@ use sdl3::pixels::Color;
 use crate::{
     application::IdType,
     control::{
-        Control, ControlCapability, Handle, Insertable, WeakHandle, ctrl_ctx::CtrlCtx,
-        ctrl_mgr::CtrlMgr, util::focus_mgr::FocusMgr,
+        Control, ControlCapability, Handle, WeakHandle, ctrl_ctx::CtrlCtx, ctrl_mgr::CtrlMgr,
+        util::focus_mgr::FocusMgr,
     },
-    event::win_init::WinInitEvent,
+    event::{Event, win_init::WinInitEvent},
     paint::{painter::Painter, shapes::Rect},
 };
 
@@ -58,6 +58,14 @@ impl ListWidget {
                 self.items.push_back(ListWidgetItem::new(item));
             }
         }
+    }
+
+    pub fn item_list_ref(&self) -> &LinkedList<ListWidgetItem> {
+        &self.items
+    }
+
+    pub fn item_list_mut(&mut self) -> &mut LinkedList<ListWidgetItem> {
+        &mut self.items
     }
 
     pub fn item_count(&self) -> usize {
@@ -150,20 +158,12 @@ impl Control for ListWidget {
 
     fn destroy_children(&mut self) {}
 
-    fn on_init(&mut self, _event: &WinInitEvent) {}
-
-    fn process_event(&mut self, event: Box<dyn crate::event::Event>) -> bool {
+    fn process_event(&mut self, event: Box<dyn Event>) -> bool {
         todo!()
     }
 
     fn insert_tree(&self, focus_mgr: &mut FocusMgr) {
         focus_mgr.insert(self.this.clone().unwrap().into_untyped());
-    }
-}
-
-impl Insertable for ListWidget {
-    fn insert_tree(mut self, mgr: &mut CtrlMgr) {
-        mgr.insert_item(Handle::new(self).clone_untyped());
     }
 }
 
@@ -187,7 +187,7 @@ impl Debug for ListWidget {
     }
 }
 
-struct ListWidgetItem {
+pub struct ListWidgetItem {
     pub(crate) text: String,
 }
 

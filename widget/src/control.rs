@@ -14,6 +14,7 @@ use crate::{
     control::{ctrl_mgr::CtrlMgr, util::focus_mgr::FocusMgr},
     event::{Event, SysEvent, win_init::WinInitEvent},
     paint::{painter::Painter, shapes::Rect},
+    slot_handle::{Slot, SlotHandle},
     window::WindowDirector,
 };
 
@@ -39,6 +40,12 @@ pub enum ControlCapability {
     CanInsertMultiChildren,
     TextEdit,
     Focus,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum SlotInsertErr {
+    SlotNotExist,
+    SlotArgMismatch,
 }
 
 pub trait Control {
@@ -78,6 +85,14 @@ pub trait Control {
         panic!("Not implemented");
     }
 
+    fn add_slot(
+        &mut self,
+        _signal_name: String,
+        _slot: Box<dyn Slot>,
+    ) -> Result<(), SlotInsertErr> {
+        Err(SlotInsertErr::SlotNotExist)
+    }
+
     // fn on_event(&mut self, event: String, arg: EventArg);
 
     fn add_child(&mut self, child: WeakHandle<dyn Control>) -> anyhow::Result<IdType>;
@@ -87,7 +102,7 @@ pub trait Control {
     fn get_children(&mut self); // add return type
     fn destroy_children(&mut self);
 
-    fn on_init(&mut self, event: &WinInitEvent);
+    fn on_init(&mut self, event: &WinInitEvent) {}
 
     fn receive_sys_event(&mut self, _event: SysEvent) {}
 
@@ -102,8 +117,14 @@ pub trait Control {
     fn attach_window(&mut self, _win: Weak<RefCell<WindowDirector>>) {}
 }
 
-pub trait Insertable: Control {
-    fn insert_tree(self, mgr: &mut CtrlMgr);
+impl dyn Control {
+    pub fn connect<Arg: 'static, F: FnMut(Arg) + 'static>(
+        &mut self,
+        signal_name: &str,
+        slot: F,
+    ) -> Result<(), SlotInsertErr> {
+        self.add_slot(signal_name.to_string(), Box::new(SlotHandle::new(slot)))
+    }
 }
 
 pub trait Eventful: Control {
@@ -112,7 +133,7 @@ pub trait Eventful: Control {
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub struct AddChildErr(pub ());
+pub struct AddChildErr;
 
 pub struct PhantomControl;
 
