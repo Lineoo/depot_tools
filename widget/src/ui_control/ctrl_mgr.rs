@@ -5,6 +5,8 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+use sdl3::keyboard::TextInputUtil;
+
 use crate::{
     application::IdType,
     id_manager::IdManager,
@@ -50,6 +52,7 @@ pub(crate) fn make_ctrl_ctx(
     ctrl_mgr: Rc<RefCell<CtrlMgr>>,
     font_mgr: Rc<RefCell<FontMgr>>,
     focus_mgr: Arc<Mutex<FocusMgr>>,
+    text_input_util: Rc<RefCell<TextInputUtil>>,
 ) -> CtrlCtx {
-    CtrlCtx::new(id_mgr, ctrl_mgr, font_mgr, focus_mgr)
+    CtrlCtx::new(id_mgr, ctrl_mgr, font_mgr, focus_mgr, text_input_util)
 }

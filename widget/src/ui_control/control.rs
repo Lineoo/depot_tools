@@ -1,8 +1,10 @@
 use std::{
     any::{Any, TypeId},
+    cell::RefCell,
     hash::Hash,
     num::NonZero,
     panic,
+    rc::{Rc, Weak},
 };
 
 use anyhow::Error;
@@ -11,7 +13,8 @@ use crate::{
     application::IdType,
     event::{Event, SysEvent, win_init::WinInitEvent},
     paint::{painter::Painter, shapes::Rect},
-    ui_control::ctrl_mgr::CtrlMgr,
+    ui_control::{ctrl_mgr::CtrlMgr, util::focus_mgr::FocusMgr},
+    window::WindowDirector,
 };
 
 pub type Handle<T> = crate::ui_control::handle::Handle<T>;
@@ -25,6 +28,7 @@ pub enum ControlCapability {
     CanInsertChild,
     CanInsertMultiChildren,
     TextEdit,
+    Focus,
 }
 
 pub trait Control {
@@ -40,14 +44,14 @@ pub trait Control {
 
     fn paint(&mut self, painter: &mut Painter);
 
-    fn set_pos(&mut self, x: u32, y: u32);
+    fn set_pos(&mut self, x: i32, y: i32);
     fn set_size(&mut self, width: u32, height: u32);
     fn set_geometry(&mut self, r: Rect) {
         self.set_pos(r.x, r.y);
         self.set_size(r.w, r.h);
     }
 
-    fn pos(&self) -> (u32, u32);
+    fn pos(&self) -> (i32, i32);
     fn size(&self) -> (u32, u32);
     fn geometry(&self) -> Rect {
         let (x, y) = self.pos();
@@ -82,6 +86,10 @@ pub trait Control {
     }
 
     fn process_event(&mut self, event: Box<dyn Event>) -> bool;
+
+    fn insert_tree(&self, focus_mgr: &mut FocusMgr);
+
+    fn attach_window(&mut self, _win: Weak<RefCell<WindowDirector>>) {}
 }
 
 pub trait Insertable: Control {
@@ -99,7 +107,7 @@ pub struct AddChildErr(pub ());
 pub struct PhantomControl;
 
 impl Control for PhantomControl {
-    fn query_capability(&self, cap: ControlCapability) -> bool {
+    fn query_capability(&self, _cap: ControlCapability) -> bool {
         false
     }
 
@@ -121,11 +129,11 @@ impl Control for PhantomControl {
 
     fn paint(&mut self, _painter: &mut Painter) {}
 
-    fn set_pos(&mut self, _x: u32, _y: u32) {}
+    fn set_pos(&mut self, _x: i32, _y: i32) {}
 
     fn set_size(&mut self, _width: u32, _height: u32) {}
 
-    fn pos(&self) -> (u32, u32) {
+    fn pos(&self) -> (i32, i32) {
         (0, 0)
     }
 
@@ -150,6 +158,8 @@ impl Control for PhantomControl {
     fn process_event(&mut self, _event: Box<dyn Event>) -> bool {
         false
     }
+
+    fn insert_tree(&self, _focus_mgr: &mut FocusMgr) {}
 }
 
 impl Hash for dyn Control {

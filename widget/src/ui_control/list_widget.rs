@@ -11,6 +11,7 @@ use crate::{
         control::{Control, ControlCapability, Handle, Insertable, WeakHandle},
         ctrl_ctx::CtrlCtx,
         ctrl_mgr::CtrlMgr,
+        util::focus_mgr::FocusMgr,
     },
 };
 
@@ -27,7 +28,7 @@ pub struct ListWidget {
 impl ListWidget {
     pub fn create(ctrl_ctx: Rc<CtrlCtx>) -> Handle<Self> {
         let id = ctrl_ctx.id_mgr().borrow_mut().get_id();
-        let r = Handle::new(ListWidget {
+        let r = Handle::new(Self {
             id,
             parent: WeakHandle::new(),
             win_id: None,
@@ -71,6 +72,7 @@ impl Control for ListWidget {
         match cap {
             ControlCapability::CanInsertChild => false,
             ControlCapability::CanInsertMultiChildren => false,
+            ControlCapability::Focus => true,
             _ => false,
         }
     }
@@ -112,7 +114,7 @@ impl Control for ListWidget {
         // todo!()
     }
 
-    fn set_pos(&mut self, x: u32, y: u32) {
+    fn set_pos(&mut self, x: i32, y: i32) {
         self.geometry.x = x;
         self.geometry.y = y;
     }
@@ -126,7 +128,7 @@ impl Control for ListWidget {
         self.geometry = r;
     }
 
-    fn pos(&self) -> (u32, u32) {
+    fn pos(&self) -> (i32, i32) {
         (self.geometry.x, self.geometry.y)
     }
 
@@ -154,6 +156,10 @@ impl Control for ListWidget {
 
     fn process_event(&mut self, event: Box<dyn crate::event::Event>) -> bool {
         todo!()
+    }
+
+    fn insert_tree(&self, focus_mgr: &mut FocusMgr) {
+        focus_mgr.insert(self.this.clone().unwrap().into_untyped());
     }
 }
 

@@ -12,3 +12,5 @@ pub use sdl3;
 pub use sdl3::keyboard::Keycode;
 
 pub use ui_control as control;
+
+pub use cosmic_text;

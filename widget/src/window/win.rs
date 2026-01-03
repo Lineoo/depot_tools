@@ -8,10 +8,10 @@ use std::{
 
 use crate::{
     application::IdType,
-    event::{Event, win_init::WinInitEvent},
+    event::{Event, focus::GainFocusEvent, win_init::WinInitEvent},
     paint::{painter::Painter, shapes::Rect},
     ui_control::{
-        control::{Control, WeakHandle},
+        control::{Control, ControlCapability, WeakHandle},
         font::FontMgr,
         util::focus_mgr::FocusMgr,
     },
@@ -38,10 +38,10 @@ pub struct Window {
     userdata: Option<Box<dyn Any>>,
     input_util: Rc<RefCell<TextInputUtil>>,
 
-    focus_mgr: FocusMgr,
+    pub(crate) focus_mgr: FocusMgr,
     event_queue: LinkedList<Box<dyn Event>>,
 
-    child: Option<WeakHandle<dyn Control>>,
+    child: WeakHandle<dyn Control>,
 }
 
 impl Window {
@@ -50,12 +50,13 @@ impl Window {
         hotkey_manager: Rc<RefCell<(GlobalHotKeyManager, HashMap<u32, u32>)>>,
         id_mgr: Rc<RefCell<IdManager>>,
         input_util: Rc<RefCell<TextInputUtil>>,
-        focus_mgr: FocusMgr,
+        mut focus_mgr: FocusMgr,
         font_mgr: Rc<RefCell<FontMgr>>,
     ) -> Self {
         let id = id_mgr.borrow_mut().get_id();
         let cvs = win.into_canvas();
         let texture_creator = Rc::new(RefCell::new(cvs.texture_creator()));
+        focus_mgr.focus_to(0);
         Window {
             cvs,
             texture_creator,
@@ -68,12 +69,17 @@ impl Window {
             input_util,
             focus_mgr,
             event_queue: LinkedList::new(),
-            child: None,
+            child: WeakHandle::new(),
         }
     }
 
-    pub fn init(&mut self, event: WinInitEvent) {
-        todo!()
+    pub fn init(&mut self) {
+        if let Some(ref child) = self.child.upgrade()
+            && let Some(child) = child.try_borrow()
+        {
+            child.insert_tree(&mut self.focus_mgr);
+        }
+        self.focus_mgr.focus_to(0);
     }
 
     pub fn no_decorations(&mut self) {
@@ -96,9 +102,7 @@ impl Window {
             self.texture_creator.clone(),
             self.font_mgr.clone(),
         );
-        if let Some(child) = &self.child
-            && let Some(child) = child.upgrade()
-        {
+        if let Some(child) = &self.child.upgrade() {
             let mut child = child.borrow_mut();
             let (width, height) = self.cvs.window().size();
             child.set_size(width, height);
@@ -149,7 +153,7 @@ impl Window {
         input_util.stop(self.cvs.window());
     }
 
-    pub fn push_event<Evt: Event + 'static>(&mut self, event: Evt) {
+    pub fn queue_event<Evt: Event + 'static>(&mut self, event: Evt) {
         self.event_queue.push_back(Box::new(event));
     }
 
@@ -159,9 +163,7 @@ impl Window {
         }
         let event = self.event_queue.pop_front().unwrap();
         let id;
-        if let Some(child) = self.child.as_ref()
-            && let Some(child) = child.upgrade()
-        {
+        if let Some(child) = self.child.upgrade() {
             if let Some(child_ref) = child.try_borrow() {
                 if !child_ref.receives_event(event.get_type_id()) {
                     return Ok(true);
@@ -176,9 +178,7 @@ impl Window {
         }
 
         // distribute event
-        if let Some(child) = self.child.as_ref()
-            && let Some(child) = child.upgrade()
-        {
+        if let Some(child) = self.child.upgrade() {
             if let Some(mut child_ref) = child.try_borrow_mut()
                 && event
                     .required_capabilities()
@@ -217,9 +217,16 @@ impl Window {
     pub fn size(&self) -> (u32, u32) {
         self.cvs.window().size()
     }
+    pub fn pos(&self) -> (i32, i32) {
+        self.cvs.window().position()
+    }
 
     pub fn set_child(&mut self, child: WeakHandle<dyn Control>) {
-        self.child = Some(child);
+        self.child = child;
+    }
+
+    pub fn get_child(&self) -> WeakHandle<dyn Control> {
+        self.child.clone()
     }
 
     pub fn reg_hotkey(&mut self, hotkey: HotKey) -> Result<(), global_hotkey::Error> {

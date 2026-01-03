@@ -118,6 +118,10 @@ impl FocusMgr {
             None
         }
     }
+
+    pub fn focus_to(&mut self, idx: usize) {
+        self.current_idx = idx;
+    }
 }
 
 pub enum FocusMgrQueryFailure {

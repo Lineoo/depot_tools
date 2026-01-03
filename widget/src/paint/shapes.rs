@@ -2,14 +2,14 @@ use std::{hash, num::TryFromIntError};
 
 #[derive(Debug, Clone, Copy, hash::Hash)]
 pub struct Rect {
+    pub x: i32,
+    pub y: i32,
     pub w: u32,
     pub h: u32,
-    pub x: u32,
-    pub y: u32,
 }
 
 impl Rect {
-    pub fn new(x: u32, y: u32, w: u32, h: u32) -> Self {
+    pub fn new(x: i32, y: i32, w: u32, h: u32) -> Self {
         Rect { x, y, w, h }
     }
 
@@ -17,7 +17,7 @@ impl Rect {
         (self.w, self.h)
     }
 
-    pub fn pos(&self) -> (u32, u32) {
+    pub fn pos(&self) -> (i32, i32) {
         (self.x, self.y)
     }
 }
@@ -45,5 +45,11 @@ impl TryInto<sdl3::rect::Rect> for Rect {
             self.w,
             self.h,
         ))
+    }
+}
+
+impl Into<(i32, i32, u32, u32)> for Rect {
+    fn into(self) -> (i32, i32, u32, u32) {
+        (self.x, self.y, self.w, self.h)
     }
 }

@@ -4,13 +4,11 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+use sdl3::keyboard::TextInputUtil;
+
 use crate::{
     id_manager::IdManager,
-    ui_control::{
-        ctrl_mgr::CtrlMgr,
-        font::FontMgr,
-        util::{focus_mgr::FocusMgr, text_edit},
-    },
+    ui_control::{ctrl_mgr::CtrlMgr, font::FontMgr, util::focus_mgr::FocusMgr},
 };
 
 pub struct CtrlCtx {
@@ -18,6 +16,7 @@ pub struct CtrlCtx {
     ctrl_mgr: Rc<RefCell<CtrlMgr>>,
     font_mgr: Rc<RefCell<FontMgr>>,
     focus_mgr: Arc<Mutex<FocusMgr>>,
+    text_input_util: Rc<RefCell<TextInputUtil>>,
 }
 
 impl CtrlCtx {
@@ -26,12 +25,14 @@ impl CtrlCtx {
         ctrl_mgr: Rc<RefCell<CtrlMgr>>,
         font_mgr: Rc<RefCell<FontMgr>>,
         focus_mgr: Arc<Mutex<FocusMgr>>,
+        text_input_util: Rc<RefCell<TextInputUtil>>,
     ) -> Self {
         CtrlCtx {
             id_mgr,
             ctrl_mgr,
             font_mgr,
             focus_mgr,
+            text_input_util,
         }
     }
 
@@ -49,5 +50,9 @@ impl CtrlCtx {
 
     pub fn focus_mgr(&self) -> Arc<Mutex<FocusMgr>> {
         self.focus_mgr.clone()
+    }
+
+    pub(crate) fn text_input_util(&self) -> Rc<RefCell<TextInputUtil>> {
+        self.text_input_util.clone()
     }
 }

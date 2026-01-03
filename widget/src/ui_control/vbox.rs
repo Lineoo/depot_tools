@@ -1,15 +1,20 @@
-use std::rc::Rc;
+use std::{
+    any::{Any, TypeId},
+    cell::RefCell,
+    rc::{Rc, Weak},
+};
 
 use smallvec::SmallVec;
 
 use crate::{
     application::IdType,
-    event::win_init::WinInitEvent,
+    event::{Event, control::CtrlResizeEvent, win_init::WinInitEvent, window::WinResizeEvent},
     paint::{painter::Painter, shapes::Rect},
     ui_control::{
         control::{Control, ControlCapability, Handle, WeakHandle},
         ctrl_ctx::CtrlCtx,
     },
+    window::WindowDirector,
 };
 
 struct VBoxItem {
@@ -76,7 +81,10 @@ impl Control for VBox {
         match cap {
             ControlCapability::CanInsertChild => true,
             ControlCapability::CanInsertMultiChildren => true,
-            _ => false,
+            _ => self
+                .children
+                .iter()
+                .any(|c| c.ctrl.borrow().query_capability(cap)),
         }
     }
 
@@ -124,13 +132,13 @@ impl Control for VBox {
             let pos = child.ctrl.borrow().pos();
             child.ctrl.borrow_mut().set_pos(pos.0, y);
             let new_height = if child.expand { expend_height } else { ch };
-            y += new_height;
+            y += new_height as i32;
             child.ctrl.borrow_mut().set_size(w, new_height);
             child.ctrl.borrow_mut().paint(painter);
         }
     }
 
-    fn set_pos(&mut self, x: u32, y: u32) {
+    fn set_pos(&mut self, x: i32, y: i32) {
         self.geometry.x = x;
         self.geometry.y = y;
     }
@@ -140,7 +148,7 @@ impl Control for VBox {
         self.geometry.h = height;
     }
 
-    fn pos(&self) -> (u32, u32) {
+    fn pos(&self) -> (i32, i32) {
         self.geometry.pos()
     }
 
@@ -186,8 +194,30 @@ impl Control for VBox {
             .any(|item| item.ctrl.borrow().receives_event(event_type))
     }
 
-    fn process_event(&mut self, event: Box<dyn crate::event::Event>) -> bool {
-        todo!()
+    fn process_event(&mut self, event: Box<dyn Event>) -> bool {
+        if event.get_type_id() == TypeId::of::<CtrlResizeEvent>() {
+            let event = event.downcast_ref::<CtrlResizeEvent>().unwrap();
+            let (w, h) = event.new_size;
+            self.set_size(w, h);
+        }
+        for item in self.children.iter() {
+            if item.ctrl.borrow().receives_event(event.get_type_id()) {
+                return item.ctrl.borrow_mut().process_event(event);
+            }
+        }
+        false
+    }
+
+    fn insert_tree(&self, focus_mgr: &mut super::util::focus_mgr::FocusMgr) {
+        for item in self.children.iter() {
+            item.ctrl.borrow_mut().insert_tree(focus_mgr);
+        }
+    }
+
+    fn attach_window(&mut self, win: Weak<RefCell<WindowDirector>>) {
+        for c in self.children.iter() {
+            c.ctrl.borrow_mut().attach_window(win.clone());
+        }
     }
 }
 

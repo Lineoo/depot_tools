@@ -6,9 +6,14 @@
 //! Every application should have a single instance of `Application`,
 //! but more instances are not prohibited.
 
+use crate::event::control::CtrlResizeEvent;
 use crate::event::edit::{ImEditEvent, TextEditEvent};
+use crate::event::focus::GainFocusEvent;
+use crate::event::keyboard::{KeyState, KeyboardEvent};
+use crate::event::win_init::WinInitEvent;
+use crate::event::window::WinResizeEvent;
 use crate::id_manager::IdManager;
-use crate::ui_control::control::ControlCapability;
+use crate::ui_control::control::{Control, ControlCapability, Handle};
 use crate::ui_control::ctrl_ctx::CtrlCtx;
 use crate::ui_control::ctrl_mgr::{CtrlMgr, make_ctrl_ctx};
 use crate::ui_control::font::{DefaultFamily, FontMgr};
@@ -68,6 +73,7 @@ impl Application {
             controls.clone(),
             Rc::new(RefCell::new(default_font_mgr().unwrap())),
             Arc::new(Mutex::new(FocusMgr::new())),
+            input_util.clone(),
         ));
         Application {
             sdl_context,
@@ -101,9 +107,30 @@ impl Application {
         )
     }
 
-    pub fn reg_win(&mut self, win: WindowDirector) {
+    pub fn reg_win(&mut self, mut win: WindowDirector) {
+        let control = win.get_child();
+        let id = win.get_id();
         self.wins
             .insert(win.get_win().get_id(), Rc::new(RefCell::new(win)));
+        if let Some(control) = control.upgrade()
+            && let Some(mut control) = control.try_borrow_mut()
+        {
+            control.attach_window(Rc::downgrade(self.wins.get(&id).unwrap()));
+        }
+        let child;
+        self.wins.get(&id).unwrap().borrow_mut().init();
+        if let Some(ctrl) = self.wins.get(&id).unwrap().borrow_mut().focus_mgr.current()
+            && let Some(ctrl) = ctrl.upgrade()
+        {
+            child = Some(ctrl.clone());
+        } else {
+            child = None;
+        }
+        if let Some(child) = child
+            && let Some(mut child) = child.try_borrow_mut()
+        {
+            child.process_event(Box::new(GainFocusEvent));
+        }
     }
 
     pub fn apply_control_id(&mut self) -> IdType {
@@ -162,24 +189,73 @@ impl Application {
                             win.borrow_mut().minimize();
                         }
                     }
+                    Event::Window {
+                        window_id,
+                        win_event: WindowEvent::Resized(w, h),
+                        timestamp,
+                    } => {
+                        if let Some(child) =
+                            get_win_child(self.wins.get(&window_id).unwrap().clone())
+                            && let Some(mut child) = child.try_borrow_mut()
+                        {
+                            child.process_event(Box::new(WinResizeEvent {
+                                win_id: window_id,
+                                new_size: (w as u32, h as u32),
+                                timestamp,
+                            }));
+                            child.process_event(Box::new(CtrlResizeEvent {
+                                win_id: window_id,
+                                new_size: (w as u32, h as u32),
+                                timestamp,
+                            }));
+                        }
+                    }
                     Event::KeyDown {
-                        keycode: Some(Keycode::Q),
+                        keycode: Some(Keycode::F4),
                         ..
                     } => break 'event_loop,
                     Event::KeyDown {
-                        keycode: Some(Keycode::W),
+                        keycode: Some(Keycode::Escape),
                         window_id,
                         ..
                     } => {
                         self.wins.remove(&window_id);
                     }
                     Event::KeyDown {
-                        window_id, keycode, ..
+                        window_id,
+                        keycode,
+                        timestamp,
+                        ..
                     } => {
-                        // wins.get_mut(&window_id)
-                        //     .unwrap()
-                        //     .call_slot_option("keydown", keycode)
-                        //     .unwrap();
+                        if let Some(child) =
+                            get_win_child(self.wins.get(&window_id).unwrap().clone())
+                            && let Some(mut child) = child.try_borrow_mut()
+                            && let Some(keycode) = keycode
+                        {
+                            child.process_event(Box::new(KeyboardEvent {
+                                keycode,
+                                state: KeyState::Pressed,
+                                timestamp,
+                            }));
+                        }
+                    }
+                    Event::KeyUp {
+                        window_id,
+                        keycode,
+                        timestamp,
+                        ..
+                    } => {
+                        if let Some(child) =
+                            get_win_child(self.wins.get(&window_id).unwrap().clone())
+                            && let Some(mut child) = child.try_borrow_mut()
+                            && let Some(keycode) = keycode
+                        {
+                            child.process_event(Box::new(KeyboardEvent {
+                                keycode,
+                                state: KeyState::Released,
+                                timestamp,
+                            }));
+                        }
                     }
                     Event::TextEditing {
                         window_id,
@@ -188,21 +264,27 @@ impl Application {
                         length,
                         timestamp,
                     } => {
-                        if let Some(active_control) = self
+                        let text_edit_enabled = if let Some(active_control) = self
                             .wins
                             .get(&window_id)
                             .unwrap()
                             .borrow()
                             .get_active_control()
+                            .clone()
                             && active_control
                                 .upgrade()
                                 .unwrap()
                                 .borrow()
                                 .query_capability(ControlCapability::TextEdit)
                         {
+                            true
+                        } else {
+                            false
+                        };
+                        if text_edit_enabled {
                             self.wins[&window_id]
                                 .borrow_mut()
-                                .push_event(ImEditEvent::new(
+                                .queue_event(ImEditEvent::new(
                                     text,
                                     start as usize,
                                     length as usize,
@@ -215,7 +297,7 @@ impl Application {
                         text,
                         timestamp,
                     } => {
-                        if let Some(active_control) = self
+                        let text_edit_enabled = if let Some(active_control) = self
                             .wins
                             .get(&window_id)
                             .unwrap()
@@ -227,9 +309,14 @@ impl Application {
                                 .borrow()
                                 .query_capability(ControlCapability::TextEdit)
                         {
+                            true
+                        } else {
+                            false
+                        };
+                        if text_edit_enabled {
                             self.wins[&window_id]
                                 .borrow_mut()
-                                .push_event(TextEditEvent::new(text, timestamp));
+                                .queue_event(TextEditEvent::new(text, timestamp));
                         }
                     }
                     _ => {}
@@ -262,12 +349,25 @@ impl Default for Application {
 
 fn default_font_mgr() -> Option<FontMgr> {
     Some(
-        FontMgr::new()?
-            .load_default_family(DefaultFamily::SansSerif)
-            .load_default_family(DefaultFamily::Serif)
-            .load_default_family(DefaultFamily::Monospace)
-            .load_default_family(DefaultFamily::UiFont)
-            .load_default_family(DefaultFamily::CodeFont)
-            .load_default_family(DefaultFamily::TerminalFont),
+        FontMgr::new()?, // .load_default_family(DefaultFamily::SansSerif)
+                         // .load_default_family(DefaultFamily::Serif)
+                         // .load_default_family(DefaultFamily::Monospace)
+                         // .load_default_family(DefaultFamily::UiFont)
+                         // .load_default_family(DefaultFamily::CodeFont)
+                         // .load_default_family(DefaultFamily::TerminalFont),
     )
+}
+
+/// Get child control and keep the window not borrowed
+///
+/// # Notes
+/// - This function will fail if the window is borrowed
+fn get_win_child(win: Rc<RefCell<WindowDirector>>) -> Option<Handle<dyn Control>> {
+    if let Ok(win) = win.try_borrow()
+        && let Some(ctrl) = win.get_child().upgrade()
+    {
+        Some(ctrl.clone())
+    } else {
+        None
+    }
 }

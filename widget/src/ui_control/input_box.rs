@@ -1,17 +1,36 @@
-use std::{cell::RefCell, path::Path, rc::Rc, sync::Arc};
+use std::{
+    any::TypeId,
+    cell::RefCell,
+    path::Path,
+    rc::{Rc, Weak},
+    sync::Arc,
+};
 
 use anyhow::Error;
-use sdl3::{keyboard::TextInputUtil, pixels::Color};
+use cosmic_text::{Action, Motion as CosmicMotion};
+use sdl3::{
+    keyboard::{Keycode, TextInputUtil},
+    pixels::Color,
+};
 
 use crate::{
     application::IdType,
-    event::{Event, win_init::WinInitEvent},
+    event::{
+        Event,
+        control::CtrlResizeEvent,
+        edit::{ImEditEvent, TextEditEvent},
+        focus::{GainFocusEvent, LoseFocusEvent},
+        keyboard::{KeyState, KeyboardEvent},
+        win_init::WinInitEvent,
+    },
     paint::{painter::Painter, shapes::Rect},
     ui_control::{
         control::{Control, ControlCapability, Handle, WeakHandle},
         ctrl_ctx::CtrlCtx,
         font::Font,
+        util::{focus_mgr::FocusMgr, text_edit::TextEdit},
     },
+    window::WindowDirector,
 };
 
 pub struct InputBox {
@@ -20,11 +39,10 @@ pub struct InputBox {
     win_id: Option<IdType>,
     geometry: Rect,
     ctrl_ctx: Rc<CtrlCtx>,
-    font: Rc<RefCell<Font>>,
+    // font: Rc<RefCell<Font>>,
     this: Option<WeakHandle<Self>>,
 
-    text: String,
-    cursor_pos: usize,
+    edit: TextEdit,
     font_height: Option<f32>,
     placeholder: String,
     input_util: Option<Rc<RefCell<TextInputUtil>>>,
@@ -32,8 +50,13 @@ pub struct InputBox {
 
 impl InputBox {
     pub fn create(ctrl_ctx: Rc<CtrlCtx>) -> Handle<Self> {
-        let r = Self::new(ctrl_ctx);
-        Handle::new(r)
+        let r = Handle::new(Self::new(ctrl_ctx.clone()));
+        r.borrow_mut().this = Some(r.downgrade());
+        ctrl_ctx
+            .ctrl_mgr()
+            .borrow_mut()
+            .insert_item(r.clone_untyped());
+        r
     }
 
     pub fn builder(ctrl_ctx: Rc<CtrlCtx>) -> InputBoxBuilder {
@@ -44,26 +67,23 @@ impl InputBox {
 
     fn new(ctrl_ctx: Rc<CtrlCtx>) -> Self {
         let id = ctrl_ctx.id_mgr().borrow_mut().get_id();
-        ctrl_ctx
-            .font_mgr()
-            .borrow_mut()
-            .load_local_family("FiraCode-Regular.ttf");
+        ctrl_ctx.font_mgr().borrow_mut();
+        // .load_local_family("FiraCode-Regular.ttf");
         Self {
             id,
             parent: WeakHandle::new(),
             win_id: None,
             geometry: Rect::new(0, 0, 100, 30),
             ctrl_ctx: ctrl_ctx.clone(),
-            font: Rc::new(RefCell::new(
-                ctrl_ctx
-                    .font_mgr()
-                    .borrow()
-                    .get_font_by_name("FiraCode-Regular", 22)
-                    .unwrap(),
-            )),
+            // font: Rc::new(RefCell::new(
+            //     ctrl_ctx
+            //         .font_mgr()
+            //         .borrow()
+            //         .get_font_by_name("FiraCode-Regular", 22)
+            //         .unwrap(),
+            // )),
             this: None,
-            text: String::new(),
-            cursor_pos: 0,
+            edit: TextEdit::new(ctrl_ctx.text_input_util(), &ctrl_ctx),
             font_height: None,
             placeholder: String::from("Input..."),
             input_util: None,
@@ -77,6 +97,7 @@ impl Control for InputBox {
             ControlCapability::CanInsertChild => false,
             ControlCapability::CanInsertMultiChildren => false,
             ControlCapability::TextEdit => true,
+            ControlCapability::Focus => true,
         }
     }
 
@@ -110,13 +131,12 @@ impl Control for InputBox {
     }
 
     fn paint(&mut self, painter: &mut Painter) {
-        let (x, y) = self.pos();
-        painter.set_color(Color::WHITE);
-        painter.text(&self.text, x + 2, y + 2, self.font.clone());
-        // TODO: more decorations and cursor
+        let (x, y, w, h) = self.geometry.into();
+        self.edit.set_geometry(x, y, w, h);
+        self.edit.render(painter);
     }
 
-    fn set_pos(&mut self, x: u32, y: u32) {
+    fn set_pos(&mut self, x: i32, y: i32) {
         self.geometry.x = x;
         self.geometry.y = y;
     }
@@ -126,7 +146,7 @@ impl Control for InputBox {
         self.geometry.h = height;
     }
 
-    fn pos(&self) -> (u32, u32) {
+    fn pos(&self) -> (i32, i32) {
         self.geometry.pos()
     }
 
@@ -148,8 +168,62 @@ impl Control for InputBox {
 
     fn on_init(&mut self, event: &WinInitEvent) {}
 
+    fn receives_event(&self, _event_type: TypeId) -> bool {
+        true
+    }
+
     fn process_event(&mut self, event: Box<dyn Event>) -> bool {
-        todo!()
+        let type_id = event.get_type_id();
+        if type_id == TypeId::of::<CtrlResizeEvent>() {
+            let event = event.downcast_ref::<CtrlResizeEvent>().unwrap();
+            let (w, h) = event.new_size;
+            self.edit.set_size(w, h);
+            true
+        } else if type_id == TypeId::of::<ImEditEvent>() {
+            let event = event.downcast_ref::<ImEditEvent>().unwrap();
+            // TODO
+            true
+        } else if type_id == TypeId::of::<TextEditEvent>() {
+            let event = event.downcast_ref::<TextEditEvent>().unwrap();
+            self.edit.insert_text(&event.text);
+            true
+        } else if type_id == TypeId::of::<GainFocusEvent>() {
+            self.edit.gain_focus().is_ok()
+        } else if type_id == TypeId::of::<LoseFocusEvent>() {
+            self.edit.lose_focus().is_ok()
+        } else if type_id == TypeId::of::<KeyboardEvent>() {
+            let event = event.downcast_ref::<KeyboardEvent>().unwrap();
+            if event.state == KeyState::Pressed {
+                match event.keycode {
+                    Keycode::Backspace => self.edit.action(Action::Backspace),
+                    Keycode::Delete => self.edit.action(Action::Delete),
+                    Keycode::Return => self.edit.action(Action::Enter),
+                    Keycode::Left => self.edit.action(Action::Motion(CosmicMotion::Left)),
+                    Keycode::Right => self.edit.action(Action::Motion(CosmicMotion::Right)),
+                    Keycode::Up => self.edit.action(Action::Motion(CosmicMotion::Up)),
+                    Keycode::Down => self.edit.action(Action::Motion(CosmicMotion::Down)),
+                    Keycode::Home => self.edit.action(Action::Motion(CosmicMotion::Home)),
+                    Keycode::End => self.edit.action(Action::Motion(CosmicMotion::End)),
+                    Keycode::PageUp => self.edit.action(Action::Motion(CosmicMotion::PageUp)),
+                    Keycode::PageDown => self.edit.action(Action::Motion(CosmicMotion::PageDown)),
+                    _ => return false,
+                }
+                true
+            } else {
+                false
+            }
+            // }else if type_id ==  {
+        } else {
+            false
+        }
+    }
+
+    fn insert_tree(&self, focus_mgr: &mut FocusMgr) {
+        focus_mgr.insert(self.this.clone().unwrap().into_untyped());
+    }
+
+    fn attach_window(&mut self, win: Weak<RefCell<WindowDirector>>) {
+        self.edit.attach_window(win);
     }
 }
 
