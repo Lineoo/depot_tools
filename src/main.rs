@@ -113,12 +113,21 @@ fn main() {
     let lw = ListWidget::create(app.ctrl_ctx().clone());
     let vb = VBox::create(app.ctrl_ctx().clone());
 
+    let lw2 = lw.clone();
     (&mut *ib.borrow_mut() as &mut dyn Control)
-        .connect(InputBox::SIGNAL_TEXT_CHANGED, |text: String| {
-            println!("{}", text)
+        .connect(InputBox::SIGNAL_TEXT_CHANGED, move |text: String| {
+            println!("{}", text);
+            let mut lw = lw2.borrow_mut();
+            lw.item_list_mut().clear();
+            for i in 0..text.len() {
+                lw.insert_item(i.to_string(), None);
+            }
             // logic here
         })
         .unwrap();
+
+    lw.borrow_mut().insert_item("hello".to_string(), None);
+    lw.borrow_mut().insert_item("hello --2".to_string(), None);
 
     vb.borrow_mut()
         .add(ib.downgrade().into_untyped(), false, InsertPosition::First);

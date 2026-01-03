@@ -1,6 +1,7 @@
 use cosmic_text::Color as CosmicColor;
 use sdl3::pixels::Color as SdlColor;
 
+pub mod creator;
 pub mod painter;
 pub mod shapes;
 

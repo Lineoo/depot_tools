@@ -20,6 +20,15 @@ impl Rect {
     pub fn pos(&self) -> (i32, i32) {
         (self.x, self.y)
     }
+
+    pub fn offset(&self, x: i32, y: i32) -> Self {
+        Rect {
+            x: self.x + x,
+            y: self.y + y,
+            w: self.w,
+            h: self.h,
+        }
+    }
 }
 
 impl TryFrom<sdl3::rect::Rect> for Rect {

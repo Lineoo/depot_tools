@@ -10,7 +10,7 @@ use crate::{
     application::IdType,
     control::{Control, ControlCapability, WeakHandle, font::FontMgr, util::focus_mgr::FocusMgr},
     event::{Event, focus::GainFocusEvent, win_init::WinInitEvent},
-    paint::{painter::Painter, shapes::Rect},
+    paint::{creator::PainterCreator, painter::Painter, shapes::Rect},
 };
 use crate::{id_manager::IdManager, window::win_strategy::*};
 use global_hotkey::{GlobalHotKeyManager, hotkey::HotKey};
@@ -109,6 +109,8 @@ impl Window {
         let rect = FRect::new(0.0, 0.0, w as f32, h as f32);
         self.cvs.copy(
             &p.canvas
+                .take()
+                .unwrap()
                 .into_surface()
                 .as_texture(self.texture_creator.borrow().deref())
                 .unwrap(),
@@ -251,6 +253,14 @@ impl Window {
 
     pub fn get_active_control(&self) -> Option<WeakHandle<dyn Control>> {
         self.focus_mgr.current()
+    }
+
+    pub fn make_painter(&self, size: (u32, u32)) -> Painter {
+        Painter::new(size, self.texture_creator.clone(), self.font_mgr.clone())
+    }
+
+    pub fn painter_creator(&self) -> PainterCreator {
+        PainterCreator::new(self.texture_creator.clone(), self.font_mgr.clone())
     }
 }
 

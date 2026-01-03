@@ -1,4 +1,9 @@
-use std::{collections::LinkedList, fmt::Debug, rc::Rc};
+use std::{
+    cell::RefCell,
+    collections::LinkedList,
+    fmt::Debug,
+    rc::{Rc, Weak},
+};
 
 use anyhow::Error;
 use sdl3::pixels::Color;
@@ -10,7 +15,8 @@ use crate::{
         util::focus_mgr::FocusMgr,
     },
     event::{Event, win_init::WinInitEvent},
-    paint::{painter::Painter, shapes::Rect},
+    paint::{creator::PainterCreator, painter::Painter, shapes::Rect},
+    window::{WindowDirector, win},
 };
 
 pub struct ListWidget {
@@ -20,6 +26,9 @@ pub struct ListWidget {
     items: LinkedList<ListWidgetItem>,
     geometry: Rect,
     ctrl_ctx: Rc<CtrlCtx>,
+    painter: Option<Painter>,
+    painter_creator: Option<PainterCreator>,
+    need_redraw: bool,
     this: Option<WeakHandle<ListWidget>>,
 }
 
@@ -33,6 +42,9 @@ impl ListWidget {
             items: LinkedList::new(),
             geometry: Rect::new(0, 0, 0, 0),
             ctrl_ctx: ctrl_ctx.clone(),
+            painter: None,
+            painter_creator: None,
+            need_redraw: false,
             this: None,
         });
         r.borrow_mut().this = Some(r.downgrade());
@@ -44,6 +56,7 @@ impl ListWidget {
     }
 
     pub fn insert_item(&mut self, item: String, pos: Option<usize>) {
+        self.need_redraw = true;
         match pos {
             Some(idx) => {
                 if idx >= self.items.len() {
@@ -65,11 +78,33 @@ impl ListWidget {
     }
 
     pub fn item_list_mut(&mut self) -> &mut LinkedList<ListWidgetItem> {
+        self.need_redraw = true;
         &mut self.items
     }
 
     pub fn item_count(&self) -> usize {
         self.items.len()
+    }
+
+    fn calc_inner_height(&self) -> u32 {
+        (self.item_count() * 23 + 3) as u32
+    }
+
+    fn render_inner_items(&mut self) {
+        if !self.need_redraw {
+            return;
+        }
+        self.need_redraw = false;
+        let painter = self.painter.as_mut().unwrap();
+        let mut current_y = 3;
+        let width = self.geometry.w - 12;
+        for item in self.items.iter() {
+            painter.set_color(Color::YELLOW);
+            painter.rect(Rect::new(3, current_y, width, 20));
+            painter.set_color(Color::BLACK);
+            painter.text(&item.text, 6, current_y, None);
+            current_y += 23;
+        }
     }
 }
 
@@ -117,7 +152,14 @@ impl Control for ListWidget {
             self.geometry.w - 6,
             self.geometry.h - 6,
         ));
-        // todo!()
+        self.render_inner_items();
+        let w = self.size().0;
+        let h = self.calc_inner_height() + 6;
+        painter.copy(
+            self.painter.as_mut().unwrap(),
+            Rect::new(0, 0, w - 6, h - 6),
+            Rect::new(self.geometry.x + 3, self.geometry.y + 3, w - 6, h - 6),
+        );
     }
 
     fn set_pos(&mut self, x: i32, y: i32) {
@@ -126,12 +168,26 @@ impl Control for ListWidget {
     }
 
     fn set_size(&mut self, width: u32, height: u32) {
+        self.need_redraw = true;
         self.geometry.w = width;
         self.geometry.h = height;
+        self.painter = Some(
+            self.painter_creator
+                .as_ref()
+                .unwrap()
+                .create((width - 6, self.calc_inner_height())),
+        );
     }
 
     fn set_geometry(&mut self, r: Rect) {
+        self.need_redraw = true;
         self.geometry = r;
+        self.painter = Some(
+            self.painter_creator
+                .as_ref()
+                .unwrap()
+                .create((r.w - 6, self.calc_inner_height())),
+        );
     }
 
     fn pos(&self) -> (i32, i32) {
@@ -165,6 +221,13 @@ impl Control for ListWidget {
     fn insert_tree(&self, focus_mgr: &mut FocusMgr) {
         focus_mgr.insert(self.this.clone().unwrap().into_untyped());
     }
+
+    fn attach_window(&mut self, win: Weak<RefCell<WindowDirector>>) {
+        let win = win.upgrade().unwrap();
+        let win = win.borrow();
+        self.painter_creator = Some(win.painter_creator());
+        self.painter = Some(win.make_painter((0, 0)));
+    }
 }
 
 impl Drop for ListWidget {
@@ -187,6 +250,7 @@ impl Debug for ListWidget {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct ListWidgetItem {
     pub(crate) text: String,
 }
@@ -194,9 +258,5 @@ pub struct ListWidgetItem {
 impl ListWidgetItem {
     pub(crate) fn new(text: String) -> Self {
         Self { text }
-    }
-
-    pub(crate) fn set_text(&mut self, text: String) {
-        self.text = text;
     }
 }

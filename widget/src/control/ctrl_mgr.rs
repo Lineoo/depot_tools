@@ -16,6 +16,7 @@ use crate::{
         util::{focus_mgr::FocusMgr, text_edit},
     },
     id_manager::IdManager,
+    paint::creator::PainterCreator,
 };
 
 pub struct CtrlMgr {
