@@ -3,7 +3,7 @@ use std::{
     collections::HashSet,
 };
 
-use crate::ui_control::control::{Control, ControlCapability, WeakHandle};
+use crate::control::{Control, ControlCapability, WeakHandle};
 
 pub mod control;
 pub mod edit;

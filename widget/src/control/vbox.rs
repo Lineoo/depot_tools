@@ -8,12 +8,9 @@ use smallvec::SmallVec;
 
 use crate::{
     application::IdType,
+    control::{Control, ControlCapability, Handle, WeakHandle, ctrl_ctx::CtrlCtx},
     event::{Event, control::CtrlResizeEvent, win_init::WinInitEvent, window::WinResizeEvent},
     paint::{painter::Painter, shapes::Rect},
-    ui_control::{
-        control::{Control, ControlCapability, Handle, WeakHandle},
-        ctrl_ctx::CtrlCtx,
-    },
     window::WindowDirector,
 };
 

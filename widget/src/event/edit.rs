@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use crate::ui_control::control::ControlCapability;
+use crate::control::ControlCapability;
 
 use super::{Event, EventType};
 

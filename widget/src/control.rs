@@ -11,14 +11,24 @@ use anyhow::Error;
 
 use crate::{
     application::IdType,
+    control::{ctrl_mgr::CtrlMgr, util::focus_mgr::FocusMgr},
     event::{Event, SysEvent, win_init::WinInitEvent},
     paint::{painter::Painter, shapes::Rect},
-    ui_control::{ctrl_mgr::CtrlMgr, util::focus_mgr::FocusMgr},
     window::WindowDirector,
 };
 
-pub type Handle<T> = crate::ui_control::handle::Handle<T>;
-pub type WeakHandle<T> = crate::ui_control::handle::WeakHandle<T>;
+pub mod ctrl_ctx;
+pub mod ctrl_mgr;
+pub mod font;
+// pub mod font_mgr;
+pub mod handle;
+pub mod input_box;
+pub mod list_widget;
+pub mod util;
+pub mod vbox;
+
+pub type Handle<T> = crate::control::handle::Handle<T>;
+pub type WeakHandle<T> = crate::control::handle::WeakHandle<T>;
 pub type EventArg = Option<Box<dyn Any>>;
 
 pub type EventProc = Box<dyn FnMut(String, WeakHandle<dyn Control>, WeakHandle<dyn Control>)>; // name, provider, receiver

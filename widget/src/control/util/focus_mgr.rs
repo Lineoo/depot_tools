@@ -1,6 +1,6 @@
 use indexmap::IndexSet;
 
-use crate::ui_control::control::{Control, WeakHandle};
+use crate::control::{Control, WeakHandle};
 
 pub struct FocusMgr {
     chain: IndexSet<WeakHandle<dyn Control>>,

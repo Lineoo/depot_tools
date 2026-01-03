@@ -5,14 +5,12 @@ use sdl3::pixels::Color;
 
 use crate::{
     application::IdType,
+    control::{
+        Control, ControlCapability, Handle, Insertable, WeakHandle, ctrl_ctx::CtrlCtx,
+        ctrl_mgr::CtrlMgr, util::focus_mgr::FocusMgr,
+    },
     event::win_init::WinInitEvent,
     paint::{painter::Painter, shapes::Rect},
-    ui_control::{
-        control::{Control, ControlCapability, Handle, Insertable, WeakHandle},
-        ctrl_ctx::CtrlCtx,
-        ctrl_mgr::CtrlMgr,
-        util::focus_mgr::FocusMgr,
-    },
 };
 
 pub struct ListWidget {

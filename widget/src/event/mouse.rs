@@ -1,8 +1,8 @@
 use std::collections::HashSet;
 
 use crate::{
+    control::ControlCapability,
     event::{Event, EventType},
-    ui_control::control::ControlCapability,
 };
 
 pub struct MouseEvent {

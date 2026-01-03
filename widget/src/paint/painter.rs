@@ -10,8 +10,8 @@ use sdl3::{
 };
 
 use crate::{
+    control::font::{Font, FontMgr},
     paint::shapes::Rect,
-    ui_control::font::{Font, FontMgr},
 };
 
 pub struct Painter {

@@ -6,6 +6,12 @@
 //! Every application should have a single instance of `Application`,
 //! but more instances are not prohibited.
 
+use crate::control::ctrl_ctx::CtrlCtx;
+use crate::control::ctrl_mgr::{CtrlMgr, make_ctrl_ctx};
+use crate::control::font::{DefaultFamily, FontMgr};
+use crate::control::util::focus_mgr::FocusMgr;
+use crate::control::util::text_edit;
+use crate::control::{Control, ControlCapability, Handle};
 use crate::event::control::CtrlResizeEvent;
 use crate::event::edit::{ImEditEvent, TextEditEvent};
 use crate::event::focus::GainFocusEvent;
@@ -13,12 +19,6 @@ use crate::event::keyboard::{KeyState, KeyboardEvent};
 use crate::event::win_init::WinInitEvent;
 use crate::event::window::WinResizeEvent;
 use crate::id_manager::IdManager;
-use crate::ui_control::control::{Control, ControlCapability, Handle};
-use crate::ui_control::ctrl_ctx::CtrlCtx;
-use crate::ui_control::ctrl_mgr::{CtrlMgr, make_ctrl_ctx};
-use crate::ui_control::font::{DefaultFamily, FontMgr};
-use crate::ui_control::util::focus_mgr::FocusMgr;
-use crate::ui_control::util::text_edit;
 use crate::window::WindowStrategyError;
 use crate::window::{
     Window, WindowDirector,

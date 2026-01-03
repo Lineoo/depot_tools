@@ -8,13 +8,9 @@ use std::{
 
 use crate::{
     application::IdType,
+    control::{Control, ControlCapability, WeakHandle, font::FontMgr, util::focus_mgr::FocusMgr},
     event::{Event, focus::GainFocusEvent, win_init::WinInitEvent},
     paint::{painter::Painter, shapes::Rect},
-    ui_control::{
-        control::{Control, ControlCapability, WeakHandle},
-        font::FontMgr,
-        util::focus_mgr::FocusMgr,
-    },
 };
 use crate::{id_manager::IdManager, window::win_strategy::*};
 use global_hotkey::{GlobalHotKeyManager, hotkey::HotKey};

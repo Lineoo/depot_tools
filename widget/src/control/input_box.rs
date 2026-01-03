@@ -15,6 +15,12 @@ use sdl3::{
 
 use crate::{
     application::IdType,
+    control::{
+        Control, ControlCapability, Handle, WeakHandle,
+        ctrl_ctx::CtrlCtx,
+        font::Font,
+        util::{focus_mgr::FocusMgr, text_edit::TextEdit},
+    },
     event::{
         Event,
         control::CtrlResizeEvent,
@@ -24,12 +30,6 @@ use crate::{
         win_init::WinInitEvent,
     },
     paint::{painter::Painter, shapes::Rect},
-    ui_control::{
-        control::{Control, ControlCapability, Handle, WeakHandle},
-        ctrl_ctx::CtrlCtx,
-        font::Font,
-        util::{focus_mgr::FocusMgr, text_edit::TextEdit},
-    },
     window::WindowDirector,
 };
 

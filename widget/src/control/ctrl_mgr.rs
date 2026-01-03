@@ -9,13 +9,13 @@ use sdl3::keyboard::TextInputUtil;
 
 use crate::{
     application::IdType,
-    id_manager::IdManager,
-    ui_control::{
-        control::{Control, Handle, Insertable},
+    control::{
+        Control, Handle, Insertable,
         ctrl_ctx::CtrlCtx,
         font::FontMgr,
         util::{focus_mgr::FocusMgr, text_edit},
     },
+    id_manager::IdManager,
 };
 
 pub struct CtrlMgr {

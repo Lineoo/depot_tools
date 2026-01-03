@@ -6,7 +6,7 @@ use std::{
     ptr::{drop_in_place, null_mut},
 };
 
-use crate::ui_control::control::{Control, PhantomControl};
+use crate::control::{Control, PhantomControl};
 
 struct HandleInner<T: Control + ?Sized = dyn Control> {
     strong: usize,

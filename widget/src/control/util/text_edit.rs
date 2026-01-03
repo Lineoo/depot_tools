@@ -16,11 +16,11 @@ use sdl3::{
 };
 
 use crate::{
-    paint::{cosmicColorIntoSdlColor, painter::Painter, sdlColorIntoCosmicColor, shapes::Rect},
-    ui_control::{
+    control::{
         ctrl_ctx::CtrlCtx,
         font::{Font, FontMgr},
     },
+    paint::{cosmicColorIntoSdlColor, painter::Painter, sdlColorIntoCosmicColor, shapes::Rect},
     window::{Window, WindowDirector},
 };
 

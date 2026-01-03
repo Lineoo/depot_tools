@@ -7,8 +7,8 @@ use std::{
 use sdl3::keyboard::TextInputUtil;
 
 use crate::{
+    control::{ctrl_mgr::CtrlMgr, font::FontMgr, util::focus_mgr::FocusMgr},
     id_manager::IdManager,
-    ui_control::{ctrl_mgr::CtrlMgr, font::FontMgr, util::focus_mgr::FocusMgr},
 };
 
 pub struct CtrlCtx {
