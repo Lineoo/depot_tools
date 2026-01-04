@@ -48,7 +48,7 @@ pub enum SlotInsertErr {
     SlotArgMismatch,
 }
 
-pub trait Control {
+pub trait Control: 'static {
     fn query_capability(&self, cap: ControlCapability) -> bool;
 
     fn window_id(&self) -> Option<IdType>;
@@ -147,7 +147,7 @@ impl Control for PhantomControl {
     }
 
     fn parent(&self) -> WeakHandle<dyn Control> {
-        WeakHandle::new()
+        WeakHandle::empty()
     }
 
     fn id(&self) -> IdType {

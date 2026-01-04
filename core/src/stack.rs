@@ -83,7 +83,7 @@ impl Stack {
             None => StackCall::With(last.args.clone()),
         }
     }
-    pub fn iter(&self) -> IntoIter {
+    pub fn iter(&self) -> IntoIter<'_> {
         IntoIter(0, self)
     }
 }

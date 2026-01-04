@@ -21,6 +21,7 @@ smallvec = "1.15.1"
 thiserror = "2.0.17"
 uuid.version = "1.16.0"
 uuid.features = ["v4"]
+parking_lot = "0.12.5"
 
 ## Main package
 
@@ -32,6 +33,7 @@ edition.workspace = true
 [dependencies]
 log.workspace = true
 env_logger.workspace = true
+parking_lot.workspace = true
 depot_core.path = "core"
 widget.path = "widget"
 

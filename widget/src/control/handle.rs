@@ -1,23 +1,9 @@
-use std::{
-    any::TypeId,
-    hash::Hash,
-    marker::PhantomData,
-    ops::{Deref, DerefMut},
-    ptr::{drop_in_place, null_mut},
-};
+use std::{any::TypeId, hash, marker, mem, ops, ptr};
 
-use crate::control::{Control, PhantomControl};
+use crate::control::Control;
 
-struct HandleInner<T: Control + ?Sized = dyn Control> {
-    strong: usize,
-    weak: usize,
-    borrow: isize,
-    data: *mut dyn Control,
-    real: TypeId,
-    _marker: PhantomData<T>,
-}
+// [: Dynamic Reference Counter :] //
 
-#[derive(Eq)]
 pub struct Handle<T: Control + ?Sized = dyn Control> {
     inner: *mut HandleInner<T>,
 }
@@ -26,38 +12,21 @@ pub struct WeakHandle<T: Control + ?Sized = dyn Control> {
     inner: *mut HandleInner<T>,
 }
 
-pub struct Ref<'handle, T: Control + ?Sized> {
-    owner: &'handle Handle<T>,
+struct HandleInner<T: Control + ?Sized = dyn Control> {
+    strong: usize,
+    weak: usize,
+    borrow: isize,
+    data: *mut dyn Control,
+    real: TypeId,
+    _marker: marker::PhantomData<T>,
 }
 
-pub struct RefMut<'handle, T: Control + ?Sized> {
-    owner: &'handle Handle<T>,
-}
-
-pub struct WeakRef<'handle, T: Control + ?Sized> {
-    owner: &'handle WeakHandle<T>,
-}
-
-pub struct WeakRefMut<'handle, T: Control + ?Sized> {
-    owner: &'handle WeakHandle<T>,
-}
+// clone //
 
 impl<T: Control + ?Sized> Clone for Handle<T> {
     fn clone(&self) -> Self {
         unsafe { (*self.inner).strong += 1 };
         Self { inner: self.inner }
-    }
-}
-
-impl<T: Control + ?Sized> PartialEq for Handle<T> {
-    fn eq(&self, other: &Self) -> bool {
-        unsafe { (*self.inner).data == (*other.inner).data }
-    }
-}
-
-impl<T: Control + ?Sized> Hash for Handle<T> {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        unsafe { (*(*self.inner).data).id() }.hash(state);
     }
 }
 
@@ -67,20 +36,37 @@ impl<T: Control + ?Sized> Clone for WeakHandle<T> {
         Self { inner: self.inner }
     }
 }
+
+// ops //
+
+impl<T: Control + ?Sized> PartialEq for Handle<T> {
+    fn eq(&self, other: &Self) -> bool {
+        unsafe { ptr::addr_eq((*self.inner).data, (*other.inner).data) }
+    }
+}
+
+impl<T: Control + ?Sized> Eq for Handle<T> {}
+
+impl<T: Control + ?Sized> hash::Hash for Handle<T> {
+    fn hash<H: hash::Hasher>(&self, state: &mut H) {
+        unsafe { (*(*self.inner).data).id() }.hash(state);
+    }
+}
+
 impl<T: Control + ?Sized> PartialEq for WeakHandle<T> {
     fn eq(&self, other: &Self) -> bool {
-        if unsafe { (*self.inner).strong } != 0 && unsafe { (*other.inner).strong } != 0 {
-            unsafe { (*self.inner).data == (*other.inner).data }
+        if unsafe { (*self.inner).strong != 0 && (*other.inner).strong != 0 } {
+            unsafe { ptr::addr_eq((*self.inner).data, (*other.inner).data) }
         } else {
-            return unsafe { (*self.inner).strong } == 0 && unsafe { (*other.inner).strong } == 0;
+            unsafe { (*self.inner).strong == 0 && (*other.inner).strong == 0 }
         }
     }
 }
 
 impl<T: Control + ?Sized> Eq for WeakHandle<T> {}
 
-impl<T: Control + ?Sized> Hash for WeakHandle<T> {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+impl<T: Control + ?Sized> hash::Hash for WeakHandle<T> {
+    fn hash<H: hash::Hasher>(&self, state: &mut H) {
         if unsafe { (*self.inner).strong } != 0 {
             unsafe { (*(*self.inner).data).id() }.hash(state)
         } else {
@@ -89,8 +75,10 @@ impl<T: Control + ?Sized> Hash for WeakHandle<T> {
     }
 }
 
+// casts //
+
 impl<T: Control + ?Sized> Handle<T> {
-    pub fn downcast<U: Control + 'static>(&self) -> Option<Handle<U>> {
+    pub fn downcast<U: Control>(&self) -> Option<Handle<U>> {
         if unsafe { (*self.inner).real != TypeId::of::<U>() } {
             return None;
         }
@@ -99,10 +87,27 @@ impl<T: Control + ?Sized> Handle<T> {
             inner: self.inner as *mut HandleInner<U>,
         })
     }
+
+    /// in-place convert a weak handle into an untyped one.
+    pub fn untyped(&self) -> &Handle {
+        let ptr = self as *const Handle<T>;
+        unsafe { (ptr as *const Handle).as_ref().unwrap() }
+    }
+
+    pub fn downgrade(&self) -> WeakHandle<T> {
+        unsafe { (*self.inner).weak += 1 };
+        WeakHandle { inner: self.inner }
+    }
+
+    pub fn into_untyped(self) -> Handle {
+        let inner = self.inner as *mut HandleInner;
+        mem::forget(self);
+        Handle { inner }
+    }
 }
 
 impl<T: Control + ?Sized> WeakHandle<T> {
-    pub fn downcast<U: Control + 'static>(&self) -> Option<WeakHandle<U>> {
+    pub fn downcast<U: Control>(&self) -> Option<WeakHandle<U>> {
         if unsafe { (*self.inner).real != TypeId::of::<U>() } {
             return None;
         }
@@ -111,32 +116,31 @@ impl<T: Control + ?Sized> WeakHandle<T> {
             inner: self.inner as *mut HandleInner<U>,
         })
     }
-}
 
-impl<T: Control + ?Sized + 'static> WeakHandle<T> {
-    pub fn new() -> Self {
-        WeakHandle {
-            inner: Box::into_raw(Box::new(HandleInner {
-                strong: 0,
-                weak: 1,
-                borrow: 0,
-                data: null_mut::<PhantomControl>() as *mut dyn Control,
-                real: TypeId::of::<T>(),
-                _marker: PhantomData::<T>,
-            })),
+    /// in-place convert a weak handle into an untyped one.
+    pub fn untyped(&self) -> &WeakHandle {
+        let ptr = self as *const WeakHandle<T>;
+        unsafe { (ptr as *const WeakHandle).as_ref().unwrap() }
+    }
+
+    pub fn upgrade(&self) -> Option<Handle<T>> {
+        if unsafe { (*self.inner).strong == 0 } {
+            return None;
         }
+        unsafe { (*self.inner).strong += 1 };
+        Some(Handle { inner: self.inner })
+    }
+
+    pub fn into_untyped(self) -> WeakHandle {
+        let inner = self.inner as *mut HandleInner;
+        mem::forget(self);
+        WeakHandle { inner }
     }
 }
 
-impl<T: Control + ?Sized + 'static> Default for WeakHandle<T> {
-    fn default() -> Self {
-        Self::new()
-    }
-}
+// init //
 
-// functions below only apply to concrete type
-
-impl<T: Control + 'static> Handle<T> {
+impl<T: Control> Handle<T> {
     pub fn new(data: T) -> Self {
         Handle {
             inner: Box::into_raw(Box::new(HandleInner {
@@ -145,27 +149,29 @@ impl<T: Control + 'static> Handle<T> {
                 borrow: 0,
                 data: Box::into_raw(Box::new(data)),
                 real: TypeId::of::<T>(),
-                _marker: PhantomData::<T>,
+                _marker: marker::PhantomData::<T>,
             })),
         }
     }
+}
 
-    pub fn clone_untyped(&self) -> Handle {
-        unsafe { (*self.inner).strong += 1 };
-        Handle {
-            inner: self.inner as *mut HandleInner,
+impl<T: Control + ?Sized> WeakHandle<T> {
+    pub fn empty() -> Self {
+        WeakHandle {
+            inner: Box::into_raw(Box::new(HandleInner {
+                strong: 0,
+                weak: 1,
+                borrow: 0,
+                #[expect(invalid_value)]
+                data: unsafe { mem::MaybeUninit::<*mut dyn Control>::zeroed().assume_init() },
+                real: TypeId::of::<T>(),
+                _marker: marker::PhantomData::<T>,
+            })),
         }
     }
-
-    pub fn into_untyped(self) -> Handle {
-        self.clone_untyped()
-    }
-
-    pub fn downgrade(&self) -> WeakHandle<T> {
-        unsafe { (*self.inner).weak += 1 };
-        WeakHandle { inner: self.inner }
-    }
 }
+
+// borrow //
 
 impl<T: Control + ?Sized> Handle<T> {
     pub fn borrow(&self) -> Ref<'_, T> {
@@ -197,19 +203,6 @@ impl<T: Control + ?Sized> Handle<T> {
     }
 }
 
-impl<T: Control + 'static> WeakHandle<T> {
-    pub fn clone_untyped(&self) -> WeakHandle {
-        unsafe { (*self.inner).weak += 1 };
-        WeakHandle {
-            inner: self.inner as *mut HandleInner,
-        }
-    }
-
-    pub fn into_untyped(self) -> WeakHandle {
-        self.clone_untyped()
-    }
-}
-
 impl<T: Control + ?Sized> WeakHandle<T> {
     pub fn borrow(&self) -> Option<WeakRef<'_, T>> {
         if unsafe { (*self.inner).strong == 0 } {
@@ -229,48 +222,76 @@ impl<T: Control + ?Sized> WeakHandle<T> {
         Some(WeakRefMut { owner: self })
     }
 
-    pub fn upgrade(&self) -> Option<Handle<T>> {
-        if unsafe { (*self.inner).strong == 0 } {
+    pub fn try_borrow(&self) -> Option<WeakRef<'_, T>> {
+        if unsafe { (*self.inner).strong == 0 || (*self.inner).borrow >= 0 } {
             return None;
         }
-        unsafe { (*self.inner).strong += 1 };
-        Some(Handle { inner: self.inner })
+        unsafe { (*self.inner).borrow += 1 };
+        Some(WeakRef { owner: self })
+    }
+
+    pub fn try_borrow_mut(&self) -> Option<WeakRefMut<'_, T>> {
+        if unsafe { (*self.inner).strong == 0 || (*self.inner).borrow == 0 } {
+            return None;
+        }
+        unsafe { (*self.inner).borrow -= 1 };
+        Some(WeakRefMut { owner: self })
     }
 }
 
-impl<T: Control> Deref for Ref<'_, T> {
+// [: Smart Pointer :] //
+
+pub struct Ref<'handle, T: Control + ?Sized> {
+    owner: &'handle Handle<T>,
+}
+
+pub struct RefMut<'handle, T: Control + ?Sized> {
+    owner: &'handle Handle<T>,
+}
+
+pub struct WeakRef<'handle, T: Control + ?Sized> {
+    owner: &'handle WeakHandle<T>,
+}
+
+pub struct WeakRefMut<'handle, T: Control + ?Sized> {
+    owner: &'handle WeakHandle<T>,
+}
+
+// deref //
+
+impl<T: Control> ops::Deref for Ref<'_, T> {
     type Target = T;
     fn deref(&self) -> &Self::Target {
         unsafe { ((*self.owner.inner).data as *mut T).as_ref().unwrap() }
     }
 }
 
-impl Deref for Ref<'_, dyn Control> {
+impl ops::Deref for Ref<'_, dyn Control> {
     type Target = dyn Control;
     fn deref(&self) -> &Self::Target {
         unsafe { (*self.owner.inner).data.as_ref().unwrap() }
     }
 }
 
-impl<T: Control> Deref for RefMut<'_, T> {
+impl<T: Control> ops::Deref for RefMut<'_, T> {
     type Target = T;
     fn deref(&self) -> &Self::Target {
         unsafe { ((*self.owner.inner).data as *mut T).as_ref().unwrap() }
     }
 }
-impl<T: Control> DerefMut for RefMut<'_, T> {
+impl<T: Control> ops::DerefMut for RefMut<'_, T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         unsafe { ((*self.owner.inner).data as *mut T).as_mut().unwrap() }
     }
 }
 
-impl Deref for RefMut<'_, dyn Control> {
+impl ops::Deref for RefMut<'_, dyn Control> {
     type Target = dyn Control;
     fn deref(&self) -> &Self::Target {
         unsafe { (*self.owner.inner).data.as_ref().unwrap() }
     }
 }
-impl DerefMut for RefMut<'_, dyn Control> {
+impl ops::DerefMut for RefMut<'_, dyn Control> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         unsafe { (*self.owner.inner).data.as_mut().unwrap() }
     }
@@ -304,13 +325,15 @@ impl<T: Control> WeakRefMut<'_, T> {
     }
 }
 
+// drop //
+
 impl<T: Control + ?Sized> Drop for Handle<T> {
     fn drop(&mut self) {
         unsafe { (*self.inner).strong -= 1 };
         if unsafe { (*self.inner).strong == 0 } {
-            unsafe { drop_in_place((*self.inner).data) };
+            unsafe { ptr::drop_in_place((*self.inner).data) };
             if unsafe { (*self.inner).weak == 0 } {
-                unsafe { drop_in_place(self.inner) };
+                unsafe { ptr::drop_in_place(self.inner) };
             }
         }
     }
@@ -320,7 +343,7 @@ impl<T: Control + ?Sized> Drop for WeakHandle<T> {
     fn drop(&mut self) {
         unsafe { (*self.inner).weak -= 1 };
         if unsafe { (*self.inner).strong == 0 && (*self.inner).weak == 0 } {
-            unsafe { drop_in_place(self.inner) };
+            unsafe { ptr::drop_in_place(self.inner) };
         }
     }
 }

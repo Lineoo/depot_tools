@@ -61,7 +61,7 @@ impl InputBox {
         ctrl_ctx
             .ctrl_mgr()
             .borrow_mut()
-            .insert_item(r.clone_untyped());
+            .insert_item(r.clone().into_untyped());
         r
     }
 
@@ -80,7 +80,7 @@ impl InputBox {
         slots.insert(Self::SIGNAL_SUBMIT.to_string(), LinkedList::new());
         Self {
             id,
-            parent: WeakHandle::new(),
+            parent: WeakHandle::empty(),
             win_id: None,
             geometry: Rect::new(0, 0, 100, 30),
             ctrl_ctx: ctrl_ctx.clone(),

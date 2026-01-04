@@ -1,8 +1,7 @@
+use libloading::Library;
 use std::ffi::{CString, c_char};
 
-use libloading::Library;
-
-use crate::entry::{ActiveEntry, BoxedEntry, EntryArgs, Invoke, Read};
+use crate::entry::{ActiveEntry, EntryArgs, Invoke, Read};
 
 pub struct DylibEntry {
     pub lib: Library,
@@ -40,16 +39,6 @@ impl ActiveEntry for DylibEntry {
             let func = self
                 .lib
                 .get::<unsafe extern "C" fn(usize)>(b"call")
-                .unwrap();
-            todo!()
-        }
-    }
-
-    fn raise(&self, index: usize) -> Option<BoxedEntry> {
-        unsafe {
-            let func = self
-                .lib
-                .get::<unsafe extern "C" fn(usize)>(b"raise")
                 .unwrap();
             todo!()
         }
