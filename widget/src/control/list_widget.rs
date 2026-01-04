@@ -51,7 +51,7 @@ impl ListWidget {
         ctrl_ctx
             .ctrl_mgr()
             .borrow_mut()
-            .insert_item(r.clone().untyped());
+            .insert_item(r.clone().into_untyped());
         r
     }
 
@@ -134,7 +134,7 @@ impl Control for ListWidget {
         if let Some(parent) = parent.upgrade() {
             parent
                 .borrow_mut()
-                .add_child(self.this.clone().unwrap().clone().untyped());
+                .add_child(self.this.clone().unwrap().clone().into_untyped());
             true
         } else {
             false
@@ -219,7 +219,7 @@ impl Control for ListWidget {
     }
 
     fn insert_tree(&self, focus_mgr: &mut FocusMgr) {
-        focus_mgr.insert(self.this.clone().unwrap().untyped());
+        focus_mgr.insert(self.this.clone().unwrap().into_untyped());
     }
 
     fn attach_window(&mut self, win: Weak<RefCell<WindowDirector>>) {

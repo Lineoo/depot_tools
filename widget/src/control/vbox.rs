@@ -47,7 +47,7 @@ impl VBox {
         ctrl_ctx
             .ctrl_mgr()
             .borrow_mut()
-            .insert_item(r.clone().untyped());
+            .insert_item(r.clone().into_untyped());
         r
     }
 
@@ -101,7 +101,7 @@ impl Control for VBox {
         if let Some(parent) = parent.upgrade() {
             parent
                 .borrow_mut()
-                .add_child(self.this.clone().unwrap().clone().untyped());
+                .add_child(self.this.clone().unwrap().clone().into_untyped());
             true
         } else {
             false

@@ -61,7 +61,7 @@ impl InputBox {
         ctrl_ctx
             .ctrl_mgr()
             .borrow_mut()
-            .insert_item(r.clone().untyped());
+            .insert_item(r.clone().into_untyped());
         r
     }
 
@@ -126,12 +126,12 @@ impl Control for InputBox {
         if let Some(old_parent) = self.parent.upgrade() {
             old_parent
                 .borrow_mut()
-                .remove_child(self.this.clone().unwrap().untyped());
+                .remove_child(self.this.clone().unwrap().into_untyped());
         }
         if let Some(new_parent) = parent.upgrade() {
             new_parent
                 .borrow_mut()
-                .add_child(self.this.clone().unwrap().untyped());
+                .add_child(self.this.clone().unwrap().into_untyped());
             self.parent = parent;
             true
         } else {
@@ -271,7 +271,7 @@ impl Control for InputBox {
     }
 
     fn insert_tree(&self, focus_mgr: &mut FocusMgr) {
-        focus_mgr.insert(self.this.clone().unwrap().untyped());
+        focus_mgr.insert(self.this.clone().unwrap().into_untyped());
     }
 
     fn attach_window(&mut self, win: Weak<RefCell<WindowDirector>>) {
