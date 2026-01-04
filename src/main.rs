@@ -116,7 +116,6 @@ fn main() {
     let lw2 = lw.clone();
     (&mut *ib.borrow_mut() as &mut dyn Control)
         .connect(InputBox::SIGNAL_TEXT_CHANGED, move |text: String| {
-            println!("{}", text);
             let mut lw = lw2.borrow_mut();
             lw.item_list_mut().clear();
             for i in 0..text.len() {

@@ -70,8 +70,16 @@ impl TextEdit {
     }
 
     pub(crate) fn action(&mut self, action: CosmicAction) {
-        self.editor
-            .action(&mut self.font_mgr.borrow().ctx.fs.borrow_mut(), action);
+        if self.is_active() {
+            self.editor
+                .action(&mut self.font_mgr.borrow().ctx.fs.borrow_mut(), action);
+        }
+    }
+
+    pub fn is_active(&self) -> bool {
+        let win = self.win.upgrade().unwrap();
+        let win = win.borrow();
+        self.input_util.borrow().is_active(unsafe { win.raw() })
     }
 
     pub fn insert_text(&mut self, text: &str) {
@@ -156,6 +164,7 @@ impl TextEdit {
         if let Some(win) = self.win.upgrade()
             && let Ok(win) = win.try_borrow_mut()
         {
+            println!("gained focus");
             let (x, y) = win.pos();
             self.geometry.0 = x;
             self.geometry.1 = y;
@@ -170,10 +179,10 @@ impl TextEdit {
     }
 
     pub fn lose_focus(&mut self) -> Result<(), TextEditWindowDestroyedErr> {
-        println!("lost focus");
         if let Some(win) = self.win.upgrade()
             && let Ok(win) = win.try_borrow_mut()
         {
+            println!("lost focus");
             self.input_util.borrow_mut().stop(unsafe { win.raw() });
             Ok(())
         } else {

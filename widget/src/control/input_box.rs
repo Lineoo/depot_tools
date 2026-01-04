@@ -47,7 +47,6 @@ pub struct InputBox {
     edit: TextEdit,
     font_height: Option<f32>,
     placeholder: String,
-    input_util: Option<Rc<RefCell<TextInputUtil>>>,
 
     slots: HashMap<String, LinkedList<Box<dyn Slot>>>,
 }
@@ -96,7 +95,6 @@ impl InputBox {
             edit: TextEdit::new(ctrl_ctx.text_input_util(), &ctrl_ctx),
             font_height: None,
             placeholder: String::from("Input..."),
-            input_util: None,
             slots,
         }
     }
@@ -199,6 +197,9 @@ impl Control for InputBox {
 
     fn process_event(&mut self, event: Box<dyn Event>) -> bool {
         let type_id = event.get_type_id();
+        if type_id != TypeId::of::<KeyboardEvent>() {
+            println!("{}", event.name());
+        }
         if type_id == TypeId::of::<CtrlResizeEvent>() {
             let event = event.downcast_ref::<CtrlResizeEvent>().unwrap();
             let (w, h) = event.new_size;
