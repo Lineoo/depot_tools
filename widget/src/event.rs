@@ -23,7 +23,7 @@ pub trait Event: 'static {
     }
 
     fn sender(&self) -> WeakHandle<dyn Control> {
-        WeakHandle::default()
+        WeakHandle::empty()
     }
 
     fn required_capabilities(&self) -> HashSet<ControlCapability> {

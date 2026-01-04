@@ -65,7 +65,7 @@ impl Window {
             input_util,
             focus_mgr,
             event_queue: LinkedList::new(),
-            child: WeakHandle::new(),
+            child: WeakHandle::empty(),
         }
     }
 

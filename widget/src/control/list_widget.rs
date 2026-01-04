@@ -37,7 +37,7 @@ impl ListWidget {
         let id = ctrl_ctx.id_mgr().borrow_mut().get_id();
         let r = Handle::new(Self {
             id,
-            parent: WeakHandle::new(),
+            parent: WeakHandle::empty(),
             win_id: None,
             items: LinkedList::new(),
             geometry: Rect::new(0, 0, 0, 0),
@@ -51,7 +51,7 @@ impl ListWidget {
         ctrl_ctx
             .ctrl_mgr()
             .borrow_mut()
-            .insert_item(r.clone_untyped());
+            .insert_item(r.clone().untyped());
         r
     }
 
@@ -134,7 +134,7 @@ impl Control for ListWidget {
         if let Some(parent) = parent.upgrade() {
             parent
                 .borrow_mut()
-                .add_child(self.this.clone().unwrap().clone_untyped());
+                .add_child(self.this.clone().unwrap().clone().untyped());
             true
         } else {
             false
@@ -219,7 +219,7 @@ impl Control for ListWidget {
     }
 
     fn insert_tree(&self, focus_mgr: &mut FocusMgr) {
-        focus_mgr.insert(self.this.clone().unwrap().into_untyped());
+        focus_mgr.insert(self.this.clone().unwrap().untyped());
     }
 
     fn attach_window(&mut self, win: Weak<RefCell<WindowDirector>>) {

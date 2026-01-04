@@ -61,7 +61,7 @@ impl InputBox {
         ctrl_ctx
             .ctrl_mgr()
             .borrow_mut()
-            .insert_item(r.clone_untyped());
+            .insert_item(r.clone().untyped());
         r
     }
 
@@ -80,7 +80,7 @@ impl InputBox {
         slots.insert(Self::SIGNAL_SUBMIT.to_string(), LinkedList::new());
         Self {
             id,
-            parent: WeakHandle::new(),
+            parent: WeakHandle::empty(),
             win_id: None,
             geometry: Rect::new(0, 0, 100, 30),
             ctrl_ctx: ctrl_ctx.clone(),
@@ -126,12 +126,12 @@ impl Control for InputBox {
         if let Some(old_parent) = self.parent.upgrade() {
             old_parent
                 .borrow_mut()
-                .remove_child(self.this.clone().unwrap().into_untyped());
+                .remove_child(self.this.clone().unwrap().untyped());
         }
         if let Some(new_parent) = parent.upgrade() {
             new_parent
                 .borrow_mut()
-                .add_child(self.this.clone().unwrap().into_untyped());
+                .add_child(self.this.clone().unwrap().untyped());
             self.parent = parent;
             true
         } else {
@@ -271,7 +271,7 @@ impl Control for InputBox {
     }
 
     fn insert_tree(&self, focus_mgr: &mut FocusMgr) {
-        focus_mgr.insert(self.this.clone().unwrap().into_untyped());
+        focus_mgr.insert(self.this.clone().unwrap().untyped());
     }
 
     fn attach_window(&mut self, win: Weak<RefCell<WindowDirector>>) {

@@ -151,11 +151,11 @@ fn main() {
     lw.borrow_mut().insert_item("hello --2".to_string(), None);
 
     vb.borrow_mut()
-        .add(ib.downgrade().into_untyped(), false, InsertPosition::First);
+        .add(ib.downgrade().untyped(), false, InsertPosition::First);
     vb.borrow_mut()
-        .add(lw.downgrade().into_untyped(), true, InsertPosition::Last);
+        .add(lw.downgrade().untyped(), true, InsertPosition::Last);
 
-    w.set_child(vb.downgrade().into_untyped());
+    w.set_child(vb.downgrade().untyped());
 
     app.reg_win(w);
     app.run();
