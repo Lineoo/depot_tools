@@ -164,7 +164,6 @@ impl TextEdit {
         if let Some(win) = self.win.upgrade()
             && let Ok(win) = win.try_borrow_mut()
         {
-            println!("gained focus");
             let (x, y) = win.pos();
             self.geometry.0 = x;
             self.geometry.1 = y;
@@ -182,7 +181,6 @@ impl TextEdit {
         if let Some(win) = self.win.upgrade()
             && let Ok(win) = win.try_borrow_mut()
         {
-            println!("lost focus");
             self.input_util.borrow_mut().stop(unsafe { win.raw() });
             Ok(())
         } else {

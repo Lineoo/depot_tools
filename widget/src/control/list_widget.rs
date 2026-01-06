@@ -29,6 +29,10 @@ pub struct ListWidget {
     painter: Option<Painter>,
     painter_creator: Option<PainterCreator>,
     need_redraw: bool,
+
+    old_size: usize,
+    selected: Option<usize>,
+
     this: Option<WeakHandle<ListWidget>>,
 }
 
@@ -45,6 +49,8 @@ impl ListWidget {
             painter: None,
             painter_creator: None,
             need_redraw: false,
+            old_size: 0,
+            selected: None,
             this: None,
         });
         r.borrow_mut().this = Some(r.downgrade());
@@ -71,6 +77,7 @@ impl ListWidget {
                 self.items.push_back(ListWidgetItem::new(item));
             }
         }
+        self.old_size += 1;
     }
 
     pub fn item_list_ref(&self) -> &LinkedList<ListWidgetItem> {
@@ -86,6 +93,59 @@ impl ListWidget {
         self.items.len()
     }
 
+    pub fn select_up(&mut self, wrap: bool) {
+        if self.items.is_empty() {
+            return;
+        }
+        if self.selected.is_none() {
+            self.selected = Some(0);
+        } else {
+            let idx = self.selected.unwrap();
+            if idx == 0 {
+                if wrap {
+                    self.selected = Some(self.item_count() - 1);
+                }
+            } else {
+                self.selected = Some(idx - 1);
+            }
+        }
+    }
+
+    pub fn select_down(&mut self, wrap: bool) {
+        if self.items.is_empty() {
+            return;
+        }
+        if self.selected.is_none() {
+            self.selected = Some(0);
+        } else {
+            let idx = self.selected.unwrap();
+            if idx >= self.item_count() - 1 {
+                if wrap {
+                    self.selected = Some(0);
+                }
+            } else {
+                self.selected = Some(idx + 1);
+            }
+        }
+    }
+
+    pub fn select_item(&mut self, idx: usize) {
+        self.selected = if idx < self.item_count() {
+            Some(idx)
+        } else {
+            None
+        };
+        self.need_redraw = true;
+    }
+
+    pub fn selected_item(&self) -> Option<usize> {
+        self.selected
+    }
+
+    pub fn unselect_item(&mut self) {
+        self.selected = None;
+    }
+
     fn calc_inner_height(&self) -> u32 {
         (self.item_count() * 23 + 3) as u32
     }
@@ -94,12 +154,25 @@ impl ListWidget {
         if !self.need_redraw {
             return;
         }
+        if self.old_size != self.item_count() {
+            // items changed in `item_list_mut`
+            self.selected = None;
+        }
+        self.old_size = self.item_count();
         self.need_redraw = false;
         let painter = self.painter.as_mut().unwrap();
         let mut current_y = 3;
         let width = self.geometry.w - 12;
-        for item in self.items.iter() {
-            painter.set_color(Color::YELLOW);
+        for (idx, item) in self.items.iter().enumerate() {
+            painter.set_color(
+                if let Some(selected) = self.selected
+                    && selected == idx
+                {
+                    Color::RED
+                } else {
+                    Color::YELLOW
+                },
+            );
             painter.rect(Rect::new(3, current_y, width, 20));
             painter.set_color(Color::BLACK);
             painter.text(&item.text, 6, current_y, None);

@@ -47,6 +47,7 @@ pub struct InputBox {
     edit: TextEdit,
     font_height: Option<f32>,
     placeholder: String,
+    single_lined: bool,
 
     slots: HashMap<String, LinkedList<Box<dyn Slot>>>,
 }
@@ -54,9 +55,10 @@ pub struct InputBox {
 impl InputBox {
     pub const SIGNAL_TEXT_CHANGED: &'static str = "text_changed";
     pub const SIGNAL_SUBMIT: &'static str = "submit";
+    pub const SIGNAL_IMPORTANT_KEY_PRESSED: &'static str = "important_key_pressed";
 
-    pub fn create(ctrl_ctx: Rc<CtrlCtx>) -> Handle<Self> {
-        let r = Handle::new(Self::new(ctrl_ctx.clone()));
+    pub fn create(ctrl_ctx: Rc<CtrlCtx>, single_lined: bool) -> Handle<Self> {
+        let r = Handle::new(Self::new(ctrl_ctx.clone(), single_lined));
         r.borrow_mut().this = Some(r.downgrade());
         ctrl_ctx
             .ctrl_mgr()
@@ -65,19 +67,23 @@ impl InputBox {
         r
     }
 
-    pub fn builder(ctrl_ctx: Rc<CtrlCtx>) -> InputBoxBuilder {
+    pub fn builder(ctrl_ctx: Rc<CtrlCtx>, single_lined: bool) -> InputBoxBuilder {
         InputBoxBuilder {
-            input_box: Self::new(ctrl_ctx),
+            input_box: Self::new(ctrl_ctx, single_lined),
         }
     }
 
-    fn new(ctrl_ctx: Rc<CtrlCtx>) -> Self {
+    fn new(ctrl_ctx: Rc<CtrlCtx>, single_lined: bool) -> Self {
         let id = ctrl_ctx.id_mgr().borrow_mut().get_id();
         ctrl_ctx.font_mgr().borrow_mut();
         // .load_local_family("FiraCode-Regular.ttf");
         let mut slots = HashMap::new();
         slots.insert(Self::SIGNAL_TEXT_CHANGED.to_string(), LinkedList::new());
         slots.insert(Self::SIGNAL_SUBMIT.to_string(), LinkedList::new());
+        slots.insert(
+            Self::SIGNAL_IMPORTANT_KEY_PRESSED.to_string(),
+            LinkedList::new(),
+        );
         Self {
             id,
             parent: WeakHandle::empty(),
@@ -95,6 +101,7 @@ impl InputBox {
             edit: TextEdit::new(ctrl_ctx.text_input_util(), &ctrl_ctx),
             font_height: None,
             placeholder: String::from("Input..."),
+            single_lined,
             slots,
         }
     }
@@ -173,6 +180,14 @@ impl Control for InputBox {
                     Err(SlotInsertErr::SlotArgMismatch)
                 }
             }
+            Self::SIGNAL_IMPORTANT_KEY_PRESSED => {
+                if slot.arg_type_is::<Keycode>() {
+                    self.slots.get_mut(&signal_name).unwrap().push_back(slot);
+                    Ok(())
+                } else {
+                    Err(SlotInsertErr::SlotArgMismatch)
+                }
+            }
             _ => Err(SlotInsertErr::SlotNotExist),
         }
     }
@@ -197,9 +212,6 @@ impl Control for InputBox {
 
     fn process_event(&mut self, event: Box<dyn Event>) -> bool {
         let type_id = event.get_type_id();
-        if type_id != TypeId::of::<KeyboardEvent>() {
-            println!("{}", event.name());
-        }
         if type_id == TypeId::of::<CtrlResizeEvent>() {
             let event = event.downcast_ref::<CtrlResizeEvent>().unwrap();
             let (w, h) = event.new_size;
@@ -237,19 +249,56 @@ impl Control for InputBox {
                 match event.keycode {
                     Keycode::Backspace => self.edit.action(Action::Backspace),
                     Keycode::Delete => self.edit.action(Action::Delete),
-                    Keycode::Return => self.edit.action(Action::Enter),
+                    Keycode::Return if self.single_lined => {
+                        self.slots
+                            .get_mut(Self::SIGNAL_SUBMIT)
+                            .unwrap()
+                            .iter_mut()
+                            .for_each(|slot| {
+                                slot.call(Box::new(self.edit.text())).unwrap();
+                            });
+                    }
+                    Keycode::Return if !self.single_lined => self.edit.action(Action::Enter),
                     Keycode::Left => self.edit.action(Action::Motion(CosmicMotion::Left)),
                     Keycode::Right => self.edit.action(Action::Motion(CosmicMotion::Right)),
-                    Keycode::Up => self.edit.action(Action::Motion(CosmicMotion::Up)),
-                    Keycode::Down => self.edit.action(Action::Motion(CosmicMotion::Down)),
+                    Keycode::Up if !self.single_lined => {
+                        self.edit.action(Action::Motion(CosmicMotion::Up))
+                    }
+                    Keycode::Down if !self.single_lined => {
+                        self.edit.action(Action::Motion(CosmicMotion::Down))
+                    }
                     Keycode::Home => self.edit.action(Action::Motion(CosmicMotion::Home)),
                     Keycode::End => self.edit.action(Action::Motion(CosmicMotion::End)),
-                    Keycode::PageUp => self.edit.action(Action::Motion(CosmicMotion::PageUp)),
-                    Keycode::PageDown => self.edit.action(Action::Motion(CosmicMotion::PageDown)),
+                    Keycode::PageUp if !self.single_lined => {
+                        self.edit.action(Action::Motion(CosmicMotion::PageUp))
+                    }
+                    Keycode::PageDown if !self.single_lined => {
+                        self.edit.action(Action::Motion(CosmicMotion::PageDown))
+                    }
+                    Keycode::Up | Keycode::Down | Keycode::PageUp | Keycode::PageDown
+                        if self.single_lined =>
+                    {
+                        self.slots
+                            .get_mut(Self::SIGNAL_IMPORTANT_KEY_PRESSED)
+                            .unwrap()
+                            .iter_mut()
+                            .for_each(|slot| {
+                                slot.call(Box::new(event.keycode)).unwrap();
+                            });
+                    }
                     _ => return false,
                 }
                 match event.keycode {
-                    Keycode::Backspace | Keycode::Delete | Keycode::Return => {
+                    Keycode::Backspace | Keycode::Delete => {
+                        self.slots
+                            .get_mut(Self::SIGNAL_TEXT_CHANGED)
+                            .unwrap()
+                            .iter_mut()
+                            .for_each(|slot| {
+                                slot.call(Box::new(self.edit.text())).unwrap();
+                            });
+                    }
+                    Keycode::Return if !self.single_lined => {
                         self.slots
                             .get_mut(Self::SIGNAL_TEXT_CHANGED)
                             .unwrap()

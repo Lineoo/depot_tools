@@ -1,5 +1,6 @@
 use depot_core::stack::Stack;
 use widget::{
+    Keycode,
     application::Application,
     control::{
         input_box::InputBox,
@@ -15,13 +16,14 @@ fn main() {
 
     let _stack = std::rc::Rc::new(parking_lot::Mutex::new(Stack::new(Box::new("Depot KIT"))));
 
-    let ib = InputBox::create(app.ctrl_ctx().clone());
+    let ib = InputBox::create(app.ctrl_ctx().clone(), true);
     let lw = ListWidget::create(app.ctrl_ctx().clone());
     let vb = VBox::create(app.ctrl_ctx().clone());
 
     let ibr = ib.untyped();
 
     let lwo = lw.clone();
+    let lwo2 = lw.clone();
     let stack = _stack.clone();
     ibr.borrow_mut()
         .connect(InputBox::SIGNAL_TEXT_CHANGED, move |text: String| {
@@ -35,17 +37,41 @@ fn main() {
             }
         })
         .unwrap();
+    ibr.borrow_mut()
+        .connect(
+            InputBox::SIGNAL_IMPORTANT_KEY_PRESSED,
+            move |key: Keycode| {
+                let mut lw = lwo2.borrow_mut();
+                if lw.selected_item().is_none() {
+                    lw.select_item(0);
+                } else {
+                    match key {
+                        Keycode::Up => {
+                            lw.select_up(true);
+                        }
+                        Keycode::Down => {
+                            lw.select_down(true);
+                        }
+                        _ => {}
+                    }
+                }
+            },
+        )
+        .unwrap();
 
     let stack = _stack.clone();
     ibr.borrow_mut()
         .connect(InputBox::SIGNAL_SUBMIT, move |_: String| {
             let mut stack = stack.lock();
             stack.call(0);
+            println!("submitted!");
         })
         .unwrap();
 
     lw.borrow_mut().insert_item("hello".to_string(), None);
     lw.borrow_mut().insert_item("hello --2".to_string(), None);
+    lw.borrow_mut().insert_item("hello --3".to_string(), None);
+    lw.borrow_mut().select_item(0);
 
     vb.borrow_mut()
         .add(ib.downgrade().into_untyped(), false, InsertPosition::First);
