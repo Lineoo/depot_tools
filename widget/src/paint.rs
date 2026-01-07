@@ -5,11 +5,11 @@ pub mod creator;
 pub mod painter;
 pub mod shapes;
 
-pub fn sdlColorIntoCosmicColor(color: SdlColor) -> CosmicColor {
+pub fn sdl_color_into_cosmic_color(color: SdlColor) -> CosmicColor {
     CosmicColor::rgba(color.r, color.g, color.b, color.a)
 }
 
-pub fn cosmicColorIntoSdlColor(color: CosmicColor) -> SdlColor {
+pub fn cosmic_color_into_sdl_color(color: CosmicColor) -> SdlColor {
     SdlColor {
         r: color.r(),
         g: color.g(),

@@ -20,7 +20,9 @@ use crate::{
         ctrl_ctx::CtrlCtx,
         font::{Font, FontMgr},
     },
-    paint::{cosmicColorIntoSdlColor, painter::Painter, sdlColorIntoCosmicColor, shapes::Rect},
+    paint::{
+        cosmic_color_into_sdl_color, painter::Painter, sdl_color_into_cosmic_color, shapes::Rect,
+    },
     window::{Window, WindowDirector},
 };
 
@@ -129,7 +131,7 @@ impl TextEdit {
     pub fn render(&mut self, painter: &mut Painter) {
         let font_mgr = &self.font_mgr.borrow();
         let fs = &mut font_mgr.ctx.fs.borrow_mut();
-        let color = sdlColorIntoCosmicColor(self.color);
+        let color = sdl_color_into_cosmic_color(self.color);
         self.editor.with_buffer_mut(|buffer| {
             buffer.set_size(
                 fs,
@@ -146,7 +148,7 @@ impl TextEdit {
             CosmicColor::rgb(200, 200, 200),
             CosmicColor::rgb(10, 10, 10),
             |x, y, w, h, color| {
-                painter.set_color(cosmicColorIntoSdlColor(color));
+                painter.set_color(cosmic_color_into_sdl_color(color));
                 painter.rect(Rect { w, h, x, y });
             },
         );

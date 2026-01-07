@@ -5,6 +5,7 @@ use widget::{
     control::{
         input_box::InputBox,
         list_widget::ListWidget,
+        rich_list_widget::RichListWidget,
         vbox::{InsertPosition, VBox},
     },
 };
@@ -17,7 +18,7 @@ fn main() {
     let _stack = std::rc::Rc::new(parking_lot::Mutex::new(Stack::new(Box::new("Depot KIT"))));
 
     let ib = InputBox::create(app.ctrl_ctx().clone(), true);
-    let lw = ListWidget::create(app.ctrl_ctx().clone());
+    let lw = RichListWidget::create(app.ctrl_ctx().clone());
     let vb = VBox::create(app.ctrl_ctx().clone());
 
     let ibr = ib.untyped();
@@ -33,7 +34,7 @@ fn main() {
             let mut stack = stack.lock();
             stack.write(text);
             for read in stack.iter() {
-                lw.insert_item(format!("{}:  {}", read.title, read.description), None);
+                lw.insert_item(read.title, read.description, None);
             }
         })
         .unwrap();
@@ -68,9 +69,12 @@ fn main() {
         })
         .unwrap();
 
-    lw.borrow_mut().insert_item("hello".to_string(), None);
-    lw.borrow_mut().insert_item("hello --2".to_string(), None);
-    lw.borrow_mut().insert_item("hello --3".to_string(), None);
+    lw.borrow_mut()
+        .insert_item("hello".to_string(), "desc".to_string(), None);
+    lw.borrow_mut()
+        .insert_item("hello --2".to_string(), "desc2".to_string(), None);
+    lw.borrow_mut()
+        .insert_item("hello --3".to_string(), "this is depot!".to_string(), None);
     lw.borrow_mut().select_item(0);
 
     vb.borrow_mut()

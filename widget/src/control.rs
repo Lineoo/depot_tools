@@ -25,6 +25,7 @@ pub mod font;
 pub mod handle;
 pub mod input_box;
 pub mod list_widget;
+pub mod rich_list_widget;
 pub mod util;
 pub mod vbox;
 
