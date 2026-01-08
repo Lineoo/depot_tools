@@ -26,7 +26,6 @@ use crate::window::{
 };
 use global_hotkey::{GlobalHotKeyEvent, GlobalHotKeyManager};
 use sdl3::keyboard::TextInputUtil;
-use sdl3::ttf::Sdl3TtfContext;
 use sdl3::{
     Sdl, VideoSubsystem,
     event::{Event, WindowEvent},
@@ -62,9 +61,6 @@ impl Application {
         let video_subsystem = sdl_context
             .video()
             .expect("Failed to initialize video subsystem");
-        let ttf_ctx = Rc::new(RefCell::new(
-            sdl3::ttf::init().expect("Failed to initialize TTF context"),
-        ));
         let input_util = Rc::new(RefCell::new(video_subsystem.text_input()));
         let id_mgr = Rc::new(RefCell::new(IdManager::new()));
         let controls = Rc::new(RefCell::new(CtrlMgr::new()));

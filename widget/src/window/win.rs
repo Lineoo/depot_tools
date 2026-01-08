@@ -18,7 +18,6 @@ use sdl3::{
     keyboard::TextInputUtil,
     pixels::Color,
     render::{FRect, TextureCreator, WindowCanvas},
-    ttf,
     video::{Window as SdlWindow, WindowContext},
 };
 use thiserror::Error;

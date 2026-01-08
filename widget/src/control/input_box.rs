@@ -20,6 +20,7 @@ use crate::{
         Control, ControlCapability, Handle, SlotInsertErr, WeakHandle,
         ctrl_ctx::CtrlCtx,
         font::Font,
+        image::Image,
         util::{focus_mgr::FocusMgr, text_edit::TextEdit},
     },
     event::{

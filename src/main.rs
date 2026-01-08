@@ -12,7 +12,7 @@ use widget::{
 
 fn main() {
     let mut app = Application::new();
-    let mut w = app.make_window("Test", 800, 600);
+    let mut w = app.make_window("DepotKit", 800, 600);
     w.no_decorations();
 
     let _stack = std::rc::Rc::new(parking_lot::Mutex::new(Stack::new(Box::new("Depot KIT"))));

@@ -11,7 +11,7 @@ global-hotkey = "0.7.0"
 log.workspace = true
 indexmap.workspace = true
 rustc-hash.workspace = true
-sdl3 = { version = "0.16.1", features = ["ttf"] }
+sdl3 = { version = "0.16.1", features = ["image"] }
 smallvec.workspace = true
 thiserror.workspace = true
 

@@ -23,6 +23,7 @@ pub mod ctrl_mgr;
 pub mod font;
 // pub mod font_mgr;
 pub mod handle;
+pub mod image;
 pub mod input_box;
 pub mod list_widget;
 pub mod rich_list_widget;

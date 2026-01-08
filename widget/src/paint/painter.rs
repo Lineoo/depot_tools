@@ -4,13 +4,16 @@ use cosmic_text::{Attrs, Buffer as CosmicBuffer, Color as CosmicColor, Metrics a
 use sdl3::{
     pixels::{Color, PixelFormat},
     rect::Rect as SdlRect,
-    render::{BlendMode, Canvas, Texture, TextureCreator},
+    render::{BlendMode as SdlBlendMode, Canvas, Texture, TextureCreator},
     surface::{Surface, SurfaceContext},
     video::WindowContext,
 };
 
 use crate::{
-    control::font::{Font, FontMgr},
+    control::{
+        font::{Font, FontMgr},
+        image::Image,
+    },
     paint::shapes::Rect,
 };
 
@@ -39,6 +42,10 @@ impl Painter {
         }
     }
 
+    pub fn blend_mode(&mut self, mode: BlendMode) {
+        self.canvas.as_mut().unwrap().set_blend_mode(mode.into());
+    }
+
     pub fn rect(&mut self, rect: Rect) {
         let rect: SdlRect = rect.try_into().unwrap();
         self.canvas.as_mut().unwrap().fill_rect(Some(rect.into()));
@@ -61,7 +68,7 @@ impl Painter {
         self.canvas
             .as_mut()
             .unwrap()
-            .set_blend_mode(BlendMode::Blend);
+            .set_blend_mode(SdlBlendMode::Blend);
 
         buffer.draw(
             &mut font_mgr.ctx.sc.borrow_mut(),
@@ -77,6 +84,22 @@ impl Painter {
                 self.canvas.as_mut().unwrap().fill_rect(Some(rect.into()));
             },
         );
+    }
+
+    pub fn image(&mut self, img: &Image, rect: Rect) {
+        let source_area = SdlRect::new(0, 0, img.get_width(), img.get_height());
+        let dest_area: SdlRect = rect.try_into().unwrap();
+        let creator = self.canvas.as_ref().unwrap().texture_creator();
+        let result = self.canvas.as_mut().unwrap().copy(
+            &img.img_data
+                .as_texture(&creator)
+                .expect("Unable to create texture"),
+            source_area,
+            dest_area,
+        );
+        if let Err(err) = result {
+            eprintln!("Error copying texture: {}", err);
+        }
     }
 
     pub fn set_color(&mut self, color: Color) {
@@ -112,5 +135,25 @@ impl Painter {
         let texture = surface.as_texture(creator).unwrap();
         self.canvas = Some(surface.into_canvas().unwrap());
         texture
+    }
+}
+
+pub enum BlendMode {
+    None,
+    Blend,
+    Add,
+    Mod,
+    Mul,
+}
+
+impl From<BlendMode> for SdlBlendMode {
+    fn from(val: BlendMode) -> Self {
+        match val {
+            BlendMode::None => SdlBlendMode::None,
+            BlendMode::Blend => SdlBlendMode::Blend,
+            BlendMode::Add => SdlBlendMode::Add,
+            BlendMode::Mod => SdlBlendMode::Mod,
+            BlendMode::Mul => SdlBlendMode::Mul,
+        }
     }
 }
