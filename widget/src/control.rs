@@ -65,6 +65,9 @@ pub trait Control: 'static {
 
     fn set_pos(&mut self, x: i32, y: i32);
     fn set_size(&mut self, width: u32, height: u32);
+    fn set_preferred_size(&mut self, _preferred_size: (u32, u32)) {}
+    fn set_max_size(&mut self, _max_size: (u32, u32)) {}
+    fn set_min_size(&mut self, _min_size: (u32, u32)) {}
     fn set_geometry(&mut self, r: Rect) {
         self.set_pos(r.x, r.y);
         self.set_size(r.w, r.h);
@@ -72,11 +75,7 @@ pub trait Control: 'static {
 
     fn pos(&self) -> (i32, i32);
     fn size(&self) -> (u32, u32);
-    fn geometry(&self) -> Rect {
-        let (x, y) = self.pos();
-        let (w, h) = self.size();
-        Rect { x, y, w, h }
-    }
+    fn preferred_size(&self) -> (u32, u32);
 
     fn subscribe(
         &mut self,
@@ -117,6 +116,60 @@ pub trait Control: 'static {
     fn insert_tree(&self, focus_mgr: &mut FocusMgr);
 
     fn attach_window(&mut self, _win: Weak<RefCell<WindowDirector>>) {}
+
+    fn x(&self) -> i32 {
+        self.pos().0
+    }
+
+    fn y(&self) -> i32 {
+        self.pos().1
+    }
+
+    fn width(&self) -> u32 {
+        self.size().0
+    }
+
+    fn height(&self) -> u32 {
+        self.size().1
+    }
+
+    fn preferred_width(&self) -> u32 {
+        self.preferred_size().0
+    }
+
+    fn preferred_height(&self) -> u32 {
+        self.preferred_size().1
+    }
+
+    fn max_size(&self) -> (u32, u32) {
+        (u32::MAX, u32::MAX)
+    }
+
+    fn max_width(&self) -> u32 {
+        self.max_size().0
+    }
+
+    fn max_height(&self) -> u32 {
+        self.max_size().1
+    }
+
+    fn min_size(&self) -> (u32, u32) {
+        (0, 0)
+    }
+
+    fn min_width(&self) -> u32 {
+        self.min_size().0
+    }
+
+    fn min_height(&self) -> u32 {
+        self.min_size().1
+    }
+
+    fn geometry(&self) -> Rect {
+        let (x, y) = self.pos();
+        let (w, h) = self.size();
+        Rect { x, y, w, h }
+    }
 }
 
 impl dyn Control {
@@ -136,64 +189,6 @@ pub trait Eventful: Control {
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct AddChildErr;
-
-pub struct PhantomControl;
-
-impl Control for PhantomControl {
-    fn query_capability(&self, _cap: ControlCapability) -> bool {
-        false
-    }
-
-    fn window_id(&self) -> Option<IdType> {
-        None
-    }
-
-    fn parent(&self) -> WeakHandle<dyn Control> {
-        WeakHandle::empty()
-    }
-
-    fn id(&self) -> IdType {
-        NonZero::new(1).unwrap()
-    }
-
-    fn set_parent(&mut self, _parent: WeakHandle<dyn Control>) -> bool {
-        false
-    }
-
-    fn paint(&mut self, _painter: &mut Painter) {}
-
-    fn set_pos(&mut self, _x: i32, _y: i32) {}
-
-    fn set_size(&mut self, _width: u32, _height: u32) {}
-
-    fn pos(&self) -> (i32, i32) {
-        (0, 0)
-    }
-
-    fn size(&self) -> (u32, u32) {
-        (0, 0)
-    }
-
-    fn add_child(&mut self, _child: WeakHandle<dyn Control>) -> anyhow::Result<IdType> {
-        Err(Error::msg("Phantom control could not add child"))
-    }
-
-    fn remove_child(&mut self, _child: WeakHandle<dyn Control>) {}
-
-    fn remove_child_by_id(&mut self, _child_id: IdType) {}
-
-    fn get_children(&mut self) {}
-
-    fn destroy_children(&mut self) {}
-
-    fn on_init(&mut self, _event: &WinInitEvent) {}
-
-    fn process_event(&mut self, _event: Box<dyn Event>) -> bool {
-        false
-    }
-
-    fn insert_tree(&self, _focus_mgr: &mut FocusMgr) {}
-}
 
 impl Hash for dyn Control {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {

@@ -28,6 +28,11 @@ pub struct VBox {
     children: SmallVec<[VBoxItem; 3]>,
     geometry: Rect,
     ctrl_ctx: Rc<CtrlCtx>,
+
+    preferred_size: (u32, u32),
+    min_size: (u32, u32),
+    max_size: (u32, u32),
+
     this: Option<WeakHandle<Self>>,
 }
 
@@ -41,6 +46,9 @@ impl VBox {
             children: SmallVec::new(),
             geometry: Rect::new(0, 0, 0, 0),
             ctrl_ctx: ctrl_ctx.clone(),
+            preferred_size: (0, 0),
+            min_size: (0, 0),
+            max_size: (u32::MAX, u32::MAX),
             this: None,
         });
         r.borrow_mut().this = Some(r.downgrade());
@@ -125,7 +133,7 @@ impl Control for VBox {
         let expend_height = rest_height / expend_count as u32;
         let mut y = self.pos().1;
         for child in &self.children {
-            let (_cw, ch) = child.ctrl.borrow().size();
+            let (_cw, ch) = child.ctrl.borrow().preferred_size();
             let pos = child.ctrl.borrow().pos();
             child.ctrl.borrow_mut().set_pos(pos.0, y);
             let new_height = if child.expand { expend_height } else { ch };
@@ -215,6 +223,81 @@ impl Control for VBox {
         for c in self.children.iter() {
             c.ctrl.borrow_mut().attach_window(win.clone());
         }
+    }
+
+    fn set_preferred_size(&mut self, preferred_size: (u32, u32)) {
+        self.preferred_size = preferred_size;
+    }
+
+    fn set_min_size(&mut self, min_size: (u32, u32)) {
+        self.min_size = min_size;
+    }
+
+    fn set_max_size(&mut self, max_size: (u32, u32)) {
+        self.max_size = max_size;
+    }
+
+    fn preferred_size(&self) -> (u32, u32) {
+        if self.preferred_size == (0, 0) {
+            (
+                self.children
+                    .iter()
+                    .map(|c| c.ctrl.borrow().preferred_width())
+                    .max()
+                    .unwrap_or(10),
+                self.children
+                    .iter()
+                    .map(|c| c.ctrl.borrow().preferred_height())
+                    .sum::<u32>()
+                    .max(10),
+            )
+        } else {
+            self.preferred_size
+        }
+    }
+
+    fn min_size(&self) -> (u32, u32) {
+        if self.min_size == (0, 0) {
+            (
+                self.children
+                    .iter()
+                    .map(|c| c.ctrl.borrow().min_width())
+                    .max()
+                    .unwrap_or(10),
+                self.children
+                    .iter()
+                    .map(|c| c.ctrl.borrow().min_height())
+                    .sum::<u32>()
+                    .max(10),
+            )
+        } else {
+            self.min_size
+        }
+    }
+
+    fn max_size(&self) -> (u32, u32) {
+        if self.max_size == (0, 0) {
+            (
+                self.children
+                    .iter()
+                    .map(|c| c.ctrl.borrow().max_width())
+                    .max()
+                    .unwrap_or(10),
+                self.children
+                    .iter()
+                    .map(|c| c.ctrl.borrow().max_height())
+                    .sum::<u32>()
+                    .max(10),
+            )
+        } else {
+            self.max_size
+        }
+    }
+}
+
+impl Drop for VBox {
+    fn drop(&mut self) {
+        self.ctrl_ctx.id_mgr().borrow_mut().release_id(self.id);
     }
 }
 

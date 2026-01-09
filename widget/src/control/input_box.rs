@@ -50,6 +50,10 @@ pub struct InputBox {
     placeholder: String,
     single_lined: bool,
 
+    preferred_size: (u32, u32),
+    min_size: (u32, u32),
+    max_size: (u32, u32),
+
     slots: HashMap<String, LinkedList<Box<dyn Slot>>>,
 }
 
@@ -103,6 +107,9 @@ impl InputBox {
             font_height: None,
             placeholder: String::from("Input..."),
             single_lined,
+            preferred_size: (100, 25),
+            min_size: (0, 0),
+            max_size: (u32::MAX, u32::MAX),
             slots,
         }
     }
@@ -326,6 +333,30 @@ impl Control for InputBox {
 
     fn attach_window(&mut self, win: Weak<RefCell<WindowDirector>>) {
         self.edit.attach_window(win);
+    }
+
+    fn set_preferred_size(&mut self, preferred_size: (u32, u32)) {
+        self.preferred_size = preferred_size;
+    }
+
+    fn set_min_size(&mut self, min_size: (u32, u32)) {
+        self.min_size = min_size;
+    }
+
+    fn set_max_size(&mut self, max_size: (u32, u32)) {
+        self.max_size = max_size;
+    }
+
+    fn preferred_size(&self) -> (u32, u32) {
+        self.preferred_size
+    }
+
+    fn min_size(&self) -> (u32, u32) {
+        self.min_size
+    }
+
+    fn max_size(&self) -> (u32, u32) {
+        self.max_size
     }
 }
 

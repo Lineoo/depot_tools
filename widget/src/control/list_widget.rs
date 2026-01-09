@@ -33,6 +33,10 @@ pub struct ListWidget {
     old_size: usize,
     selected: Option<usize>,
 
+    preferred_size: (u32, u32),
+    min_size: (u32, u32),
+    max_size: (u32, u32),
+
     this: Option<WeakHandle<ListWidget>>,
 }
 
@@ -51,6 +55,9 @@ impl ListWidget {
             need_redraw: false,
             old_size: 0,
             selected: None,
+            preferred_size: (100, 100),
+            min_size: (0, 0),
+            max_size: (u32::MAX, u32::MAX),
             this: None,
         });
         r.borrow_mut().this = Some(r.downgrade());
@@ -300,6 +307,30 @@ impl Control for ListWidget {
         let win = win.borrow();
         self.painter_creator = Some(win.painter_creator());
         self.painter = Some(win.make_painter((0, 0)));
+    }
+
+    fn set_preferred_size(&mut self, preferred_size: (u32, u32)) {
+        self.preferred_size = preferred_size;
+    }
+
+    fn set_min_size(&mut self, min_size: (u32, u32)) {
+        self.min_size = min_size;
+    }
+
+    fn set_max_size(&mut self, max_size: (u32, u32)) {
+        self.max_size = max_size;
+    }
+
+    fn preferred_size(&self) -> (u32, u32) {
+        self.preferred_size
+    }
+
+    fn min_size(&self) -> (u32, u32) {
+        self.min_size
+    }
+
+    fn max_size(&self) -> (u32, u32) {
+        self.max_size
     }
 }
 
